@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 
+import { Layout } from '@/app/layout/layout'
 import { PrivateRoute } from '@/app/router/PrivateRoute'
 import { AuthPage } from '@/pages/auth/AuthPage'
 import { ChatPage } from '@/pages/chat/ChatPage'
@@ -11,7 +12,11 @@ import { ProfilePage } from '@/pages/profile/ProfilePage'
 export const router = createBrowserRouter([
   {
     path: '/auth',
-    element: <AuthPage />,
+    element: (
+      <Layout>
+        <AuthPage />
+      </Layout>
+    ),
   },
   {
     element: <PrivateRoute />,
@@ -22,7 +27,11 @@ export const router = createBrowserRouter([
       },
       {
         path: '/onboarding',
-        element: <OnboardingPage />,
+        element: (
+          <Layout>
+            <OnboardingPage />
+          </Layout>
+        ),
       },
       {
         path: '/home',
