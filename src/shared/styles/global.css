@@ -8,6 +8,7 @@ body {
   font-size: 62.5%;
   scroll-behavior: smooth;
   scrollbar-width: none;
+  background-color: var(--color-background);
   font-family: Pretendard, system-ui, sans-serif;
 }
 
@@ -21,4 +22,12 @@ body {
   max-width: 430px;
   min-height: 100dvh;
   margin: 0 auto;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
 }
