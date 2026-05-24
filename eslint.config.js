@@ -21,7 +21,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['vite.config.ts'],
+    files: ['vite.config.ts', 'script/**/*.ts'],
     languageOptions: {
       globals: globals.node,
     },
