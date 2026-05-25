@@ -39,7 +39,6 @@
 }
 
 @theme {
-
   --text-extrabold-24: 24px;
   --text-extrabold-24--line-height: 1.5;
   --text-extrabold-24--font-weight: 800;
@@ -149,4 +148,49 @@
   --text-regular-10--line-height: 1.45;
   --text-regular-10--font-weight: 400;
   --text-regular-10--letter-spacing: 0.01em;
+
+  --text-h1-22sb: 22px;
+  --text-h1-22sb--line-height: 1.4;
+  --text-h1-22sb--font-weight: 600;
+  --text-h1-22sb--letter-spacing: -0.02em;
+
+  --text-title-22b: 22px;
+  --text-title-22b--line-height: 1.4;
+  --text-title-22b--font-weight: 700;
+  --text-title-22b--letter-spacing: -0.02em;
+
+  --text-body1-15r: 15px;
+  --text-body1-15r--line-height: 1.4;
+  --text-body1-15r--font-weight: 400;
+  --text-body1-15r--letter-spacing: -0.02em;
+
+  --text-body2-15sb: 15px;
+  --text-body2-15sb--line-height: 1.4;
+  --text-body2-15sb--font-weight: 600;
+  --text-body2-15sb--letter-spacing: -0.02em;
+
+  --text-button1-14b: 14px;
+  --text-button1-14b--line-height: 1.4;
+  --text-button1-14b--font-weight: 700;
+  --text-button1-14b--letter-spacing: -0.02em;
+
+  --text-button2-10r: 10px;
+  --text-button2-10r--line-height: 1.4;
+  --text-button2-10r--font-weight: 400;
+  --text-button2-10r--letter-spacing: -0.02em;
+
+  --text-caption1-12r: 12px;
+  --text-caption1-12r--line-height: 1.4;
+  --text-caption1-12r--font-weight: 400;
+  --text-caption1-12r--letter-spacing: -0.02em;
+
+  --text-caption2-12sb: 12px;
+  --text-caption2-12sb--line-height: 1.4;
+  --text-caption2-12sb--font-weight: 600;
+  --text-caption2-12sb--letter-spacing: -0.02em;
+
+  --text-input1-14r: 14px;
+  --text-input1-14r--line-height: 1.4;
+  --text-input1-14r--font-weight: 400;
+  --text-input1-14r--letter-spacing: -0.02em;
 }
