@@ -1,3 +1,85 @@
+import {useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+
+import {
+  ONBOARDING_STEP_PROGRESS,
+  ONBOARDING_STEPS,
+} from '@/pages/onboarding/constants/constants';
+import type {OnboardingStep} from '@/pages/onboarding/constants/constants';
+import {BirthYearStep} from '@/pages/onboarding/steps/BirthYearStep';
+import {CategoryStep} from '@/pages/onboarding/steps/CategoryStep';
+import {DepartmentStep} from '@/pages/onboarding/steps/DepartmentStep';
+import {MbtiStep} from '@/pages/onboarding/steps/MbtiStep';
+import {NicknameStep} from '@/pages/onboarding/steps/NicknameStep';
+import {Button} from '@/shared/components/Button';
+import {Header} from '@/shared/components/Header';
+import {IcSvgLeft} from '@/shared/icons';
+
 export const OnboardingPage = () => {
-  return <></>
-}
+  const navigate = useNavigate();
+  const [step, setStep] = useState<OnboardingStep>('nickname');
+
+  const currentStepIndex = ONBOARDING_STEPS.indexOf(step);
+
+  const moveStep = (nextIndex: number) => {
+    const nextStep = ONBOARDING_STEPS[nextIndex];
+
+    if (nextStep) {
+      setStep(nextStep);
+    }
+  };
+
+  const handleBack = () => {
+    if (currentStepIndex === 0) {
+      navigate(-1);
+      return;
+    }
+
+    moveStep(currentStepIndex - 1);
+  };
+
+  const handleNext = () => {
+    moveStep(currentStepIndex + 1);
+  };
+
+  const renderStepContent = () => {
+    switch (step) {
+      case 'birthYear':
+        return <BirthYearStep />;
+      case 'department':
+        return <DepartmentStep />;
+      case 'mbti':
+        return <MbtiStep />;
+      case 'category':
+        return <CategoryStep />;
+      case 'nickname':
+      default:
+        return <NicknameStep />;
+    }
+  };
+
+  return (
+    <section className='flex min-h-dvh flex-col'>
+      <Header
+        leftItem={
+          <IcSvgLeft width={24} height={24} className='text-gray-400' />
+        }
+        onClickLeft={handleBack}
+        rightItem={
+          <span className='text-caption1-12r text-gray-400'>건너뛰기</span>
+        }
+        onClickRight={() => moveStep(ONBOARDING_STEPS.length - 1)}
+        hasProgress
+        progress={ONBOARDING_STEP_PROGRESS[step]}
+      />
+
+      <div className='flex flex-1 flex-col'>
+        <div className='flex-1'>{renderStepContent()}</div>
+
+        <div className='pb-[2rem]'>
+          <Button text='다음' onClick={handleNext} />
+        </div>
+      </div>
+    </section>
+  );
+};

@@ -1,40 +1,21 @@
 import {AuthTextarea} from '@/pages/auth/components/AuthTextarea';
-import {AUTH_EMAIL_DOMAIN, AUTH_STEP_PROGRESS} from '@/pages/auth/mocks/mock';
+import {AUTH_EMAIL_DOMAIN} from '@/pages/auth/mocks/mock';
 import {Button} from '@/shared/components/Button';
-import {Header} from '@/shared/components/Header';
 import {Input} from '@/shared/components/Input';
-import {IcSvgLeft} from '@/shared/icons';
 
 interface EmailAuthStepProps {
   emailId: string;
   onEmailIdChange: (emailId: string) => void;
   onSubmit: () => void;
-  onSkip: () => void;
-  onBack: () => void;
 }
 
 export const EmailAuthStep = ({
   emailId,
   onEmailIdChange,
   onSubmit,
-  onSkip,
-  onBack,
 }: EmailAuthStepProps) => {
   return (
-    <section className='flex min-h-dvh flex-col'>
-      <Header
-        leftItem={
-          <IcSvgLeft width={24} height={24} className='text-gray-400' />
-        }
-        onClickLeft={onBack}
-        rightItem={
-          <span className='text-caption1-12r text-gray-400'>건너뛰기</span>
-        }
-        onClickRight={onSkip}
-        hasProgress
-        progress={AUTH_STEP_PROGRESS.email}
-      />
-
+    <>
       <div className='mt-[3rem]'>
         <AuthTextarea type='email' />
       </div>
@@ -65,6 +46,6 @@ export const EmailAuthStep = ({
           onClick={onSubmit}
         />
       </div>
-    </section>
+    </>
   );
 };

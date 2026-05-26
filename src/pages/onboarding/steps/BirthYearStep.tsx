@@ -1,0 +1,14 @@
+import {useState} from 'react';
+
+import {BirthYearScroll} from '@/pages/onboarding/components/BirthYearScroll';
+
+export const BirthYearStep = () => {
+  const [birthYear, setBirthYear] = useState(2005);
+
+  return (
+    <div className='mt-[3rem] flex flex-col justify-center gap-[7.3rem]'>
+      <p className='text-h1-22sb'>몇 년도에 태어나셨나요?</p>
+      <BirthYearScroll value={birthYear} onChange={setBirthYear} />
+    </div>
+  );
+};
