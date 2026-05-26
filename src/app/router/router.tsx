@@ -1,13 +1,14 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import {createBrowserRouter, Navigate} from 'react-router-dom';
 
-import { Layout } from '@/app/layout/layout'
-import { PrivateRoute } from '@/app/router/PrivateRoute'
-import { AuthPage } from '@/pages/auth/AuthPage'
-import { ChatPage } from '@/pages/chat/ChatPage'
-import { HomePage } from '@/pages/home/HomePage'
-import { MyPage } from '@/pages/my/MyPage'
-import { OnboardingPage } from '@/pages/onboarding/OnboardingPage'
-import { ProfilePage } from '@/pages/profile/ProfilePage'
+import {BottomNavLayout} from '@/app/layout/BottomNavLayout';
+import {Layout} from '@/app/layout/layout';
+import {PrivateRoute} from '@/app/router/PrivateRoute';
+import {AuthPage} from '@/pages/auth/AuthPage';
+import {ChatPage} from '@/pages/chat/ChatPage';
+import {HomePage} from '@/pages/home/HomePage';
+import {MyPage} from '@/pages/my/MyPage';
+import {OnboardingPage} from '@/pages/onboarding/OnboardingPage';
+import {ProfilePage} from '@/pages/profile/ProfilePage';
 
 export const router = createBrowserRouter([
   {
@@ -34,24 +35,29 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: '/home',
-        element: <HomePage />,
+        element: <BottomNavLayout />,
+        children: [
+          {
+            path: '/home',
+            element: <HomePage />,
+          },
+          {
+            path: '/chat',
+            element: <ChatPage />,
+          },
+          {
+            path: '/my',
+            element: <MyPage />,
+          },
+        ],
       },
       {
         path: '/profile/:userId',
         element: <ProfilePage />,
       },
       {
-        path: '/chat',
-        element: <ChatPage />,
-      },
-      {
         path: '/chat/:roomId',
         element: <ChatPage />,
-      },
-      {
-        path: '/my',
-        element: <MyPage />,
       },
     ],
   },
@@ -59,4 +65,4 @@ export const router = createBrowserRouter([
     path: '*',
     element: <Navigate to="/auth" replace />,
   },
-])
+]);
