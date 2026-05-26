@@ -1,11 +1,16 @@
-import {useState} from 'react';
-
 import {Input} from '@/shared/components/Input';
 
 const NICKNAME_MAX_LENGTH = 12;
 
-export const NicknameStep = () => {
-  const [nickname, setNickname] = useState('');
+interface NicknameStepProps {
+  nickname: string;
+  onNicknameChange: (nickname: string) => void;
+}
+
+export const NicknameStep = ({
+  nickname,
+  onNicknameChange,
+}: NicknameStepProps) => {
   const hasNickname = nickname.length > 0;
 
   const handleCheckDuplicate = () => {
@@ -32,7 +37,7 @@ export const NicknameStep = () => {
 
         <Input
           value={nickname}
-          onChange={(event) => setNickname(event.target.value)}
+          onChange={(event) => onNicknameChange(event.target.value)}
           maxLength={NICKNAME_MAX_LENGTH}
           placeholder='ex) abcde'
           rightItem={

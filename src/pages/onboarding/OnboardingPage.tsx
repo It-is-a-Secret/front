@@ -5,7 +5,10 @@ import {
   ONBOARDING_STEP_PROGRESS,
   ONBOARDING_STEPS,
 } from '@/pages/onboarding/constants/constants';
-import type {OnboardingStep} from '@/pages/onboarding/constants/constants';
+import type {
+  MbtiType,
+  OnboardingStep,
+} from '@/pages/onboarding/constants/constants';
 import {BirthYearStep} from '@/pages/onboarding/steps/BirthYearStep';
 import {CategoryStep} from '@/pages/onboarding/steps/CategoryStep';
 import {DepartmentStep} from '@/pages/onboarding/steps/DepartmentStep';
@@ -18,8 +21,15 @@ import {IcSvgLeft} from '@/shared/icons';
 export const OnboardingPage = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState<OnboardingStep>('nickname');
+  const [nickname, setNickname] = useState('');
+  const [department, setDepartment] = useState('');
+  const [selectedMbti, setSelectedMbti] = useState<MbtiType | null>(null);
 
   const currentStepIndex = ONBOARDING_STEPS.indexOf(step);
+  const isNextDisabled =
+    (step === 'nickname' && nickname.length === 0) ||
+    (step === 'department' && department.length === 0) ||
+    (step === 'mbti' && !selectedMbti);
 
   const moveStep = (nextIndex: number) => {
     const nextStep = ONBOARDING_STEPS[nextIndex];
@@ -47,14 +57,29 @@ export const OnboardingPage = () => {
       case 'birthYear':
         return <BirthYearStep />;
       case 'department':
-        return <DepartmentStep />;
+        return (
+          <DepartmentStep
+            department={department}
+            onDepartmentChange={setDepartment}
+          />
+        );
       case 'mbti':
-        return <MbtiStep />;
+        return (
+          <MbtiStep
+            selectedMbti={selectedMbti}
+            onMbtiChange={setSelectedMbti}
+          />
+        );
       case 'category':
         return <CategoryStep />;
       case 'nickname':
       default:
-        return <NicknameStep />;
+        return (
+          <NicknameStep
+            nickname={nickname}
+            onNicknameChange={setNickname}
+          />
+        );
     }
   };
 
@@ -77,7 +102,7 @@ export const OnboardingPage = () => {
         <div className='flex-1'>{renderStepContent()}</div>
 
         <div className='pb-[2rem]'>
-          <Button text='다음' onClick={handleNext} />
+          <Button text='다음' disabled={isNextDisabled} onClick={handleNext} />
         </div>
       </div>
     </section>
