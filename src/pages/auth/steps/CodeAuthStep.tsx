@@ -37,7 +37,7 @@ export const CodeAuthStep = ({
       <div className='mt-auto flex flex-col pb-[3.8rem]'>
         <button
           type='button'
-          className='text-button1-14b w-full rounded-[20px] border border-gray-200 bg-transparent p-[1.55rem] text-gray-600'
+          className='text-button1-14b border-primary text-primary w-full rounded-[20px] border bg-transparent p-[1.55rem]'
           onClick={onResend}>
           인증 코드 재발송
         </button>
