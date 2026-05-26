@@ -21,7 +21,7 @@ export const Input = ({
 
   return (
     <div
-      className={`bg-white-800 text-regular-14 flex w-full items-center rounded-[1.6rem] border px-[16px] py-[15.5px] ${
+      className={`bg-white-800 text-regular-14 flex w-full items-center rounded-[1.6rem] border px-[16px] py-[14px] ${
         isError || hasValue
           ? 'border-primary'
           : 'focus-within:border-primary border-gray-200'
