@@ -13,6 +13,7 @@
   "dependencies": {
     "@tanstack/react-query": "^5.100.14",
     "@tanstack/react-query-devtools": "^5.100.14",
+    "embla-carousel-react": "^8.6.0",
     "ky": "^2.0.2",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",

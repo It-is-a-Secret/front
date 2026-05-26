@@ -53,7 +53,11 @@ export const router = createBrowserRouter([
       },
       {
         path: '/profile/:userId',
-        element: <ProfilePage />,
+        element: (
+          <Layout>
+            <ProfilePage />
+          </Layout>
+        ),
       },
       {
         path: '/chat/:roomId',
