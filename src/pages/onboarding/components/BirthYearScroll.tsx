@@ -13,21 +13,36 @@ const CENTER_PADDING = (SCROLL_HEIGHT - ITEM_HEIGHT) / 2;
 
 export const BirthYearScroll = ({value, onChange}: BirthYearScrollProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollTimerRef = useRef<number | null>(null);
+  const didInitScrollRef = useRef(false);
 
   useEffect(() => {
+    if (didInitScrollRef.current) {
+      return;
+    }
+
     const selectedIndex = BIRTH_YEARS.indexOf(value);
 
     if (selectedIndex < 0) {
       return;
     }
 
+    didInitScrollRef.current = true;
     scrollRef.current?.scrollTo({
       top: selectedIndex * ITEM_HEIGHT,
-      behavior: 'smooth',
+      behavior: 'auto',
     });
   }, [value]);
 
-  const handleScroll = () => {
+  useEffect(() => {
+    return () => {
+      if (scrollTimerRef.current) {
+        window.clearTimeout(scrollTimerRef.current);
+      }
+    };
+  }, []);
+
+  const changeToCenteredYear = () => {
     const scrollTop = scrollRef.current?.scrollTop ?? 0;
     const selectedIndex = Math.round(scrollTop / ITEM_HEIGHT);
     const nextYear = BIRTH_YEARS[selectedIndex];
@@ -35,6 +50,32 @@ export const BirthYearScroll = ({value, onChange}: BirthYearScrollProps) => {
     if (nextYear && nextYear !== value) {
       onChange(nextYear);
     }
+  };
+
+  const handleScroll = () => {
+    if (scrollTimerRef.current) {
+      window.clearTimeout(scrollTimerRef.current);
+    }
+
+    scrollTimerRef.current = window.setTimeout(changeToCenteredYear, 120);
+  };
+
+  const handleSelectYear = (year: number) => {
+    const selectedIndex = BIRTH_YEARS.indexOf(year);
+
+    if (selectedIndex < 0) {
+      return;
+    }
+
+    if (scrollTimerRef.current) {
+      window.clearTimeout(scrollTimerRef.current);
+    }
+
+    scrollRef.current?.scrollTo({
+      top: selectedIndex * ITEM_HEIGHT,
+      behavior: 'smooth',
+    });
+    onChange(year);
   };
 
   return (
@@ -64,7 +105,7 @@ export const BirthYearScroll = ({value, onChange}: BirthYearScrollProps) => {
                     ? 'text-bold-28 text-primary'
                     : 'text-medium-20 text-gray-400'
                 }`}
-                onClick={() => onChange(year)}>
+                onClick={() => handleSelectYear(year)}>
                 {year}
               </button>
             );
