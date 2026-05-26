@@ -11,9 +11,11 @@ import type {
 } from '@/pages/onboarding/constants/constants';
 import {BirthYearStep} from '@/pages/onboarding/steps/BirthYearStep';
 import {CategoryStep} from '@/pages/onboarding/steps/CategoryStep';
+import {CompleteOnboardingStep} from '@/pages/onboarding/steps/CompleteOnboardingStep';
 import {DepartmentStep} from '@/pages/onboarding/steps/DepartmentStep';
 import {MbtiStep} from '@/pages/onboarding/steps/MbtiStep';
 import {NicknameStep} from '@/pages/onboarding/steps/NicknameStep';
+import {PhotoUploadStep} from '@/pages/onboarding/steps/PhotoUploadStep';
 import {Button} from '@/shared/components/Button';
 import {Header} from '@/shared/components/Header';
 import {IcSvgLeft} from '@/shared/icons';
@@ -72,6 +74,10 @@ export const OnboardingPage = () => {
         );
       case 'category':
         return <CategoryStep />;
+      case 'photoUpload':
+        return <PhotoUploadStep />;
+      case 'complete':
+        return <CompleteOnboardingStep onStart={() => navigate('/home')} />;
       case 'nickname':
       default:
         return (
@@ -82,6 +88,10 @@ export const OnboardingPage = () => {
         );
     }
   };
+
+  if (step === 'complete') {
+    return renderStepContent();
+  }
 
   return (
     <section className='flex min-h-dvh flex-col'>

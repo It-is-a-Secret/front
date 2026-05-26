@@ -1,20 +1,14 @@
-import type {ReactNode} from 'react';
-
 import {Button} from '@/shared/components/Button';
 
 interface LoginAuthStepProps {
-  visualSlot?: ReactNode;
   onKakaoLogin: () => void;
 }
 
-export const LoginAuthStep = ({
-  visualSlot,
-  onKakaoLogin,
-}: LoginAuthStepProps) => {
+export const LoginAuthStep = ({onKakaoLogin}: LoginAuthStepProps) => {
   return (
     <section className='flex min-h-dvh flex-col'>
       <div className='flex flex-1 items-center justify-center'>
-        {visualSlot}
+        <img src='logo.png' />
       </div>
 
       <div className='pb-[3.8rem]'>

@@ -76,7 +76,7 @@ export const AuthPage = () => {
     return (
       <CompleteAuthStep
         onNext={() => navigate('/onboarding')}
-        onLater={() => {}}
+        onLater={() => navigate('/home')}
       />
     );
   }
