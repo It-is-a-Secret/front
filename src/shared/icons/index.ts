@@ -1,6 +1,7 @@
 // (auto-generated) Do not edit manually.
 // Run `pnpm build:icons` to regenerate.
 
+export {default as IcSvgHumbleiconsHeart} from './ic-humbleicons-heart';
 export {default as IcSvgChat} from './ic-chat';
 export {default as IcSvgChat2} from './ic-chat2';
 export {default as IcSvgEtc} from './ic-etc';
