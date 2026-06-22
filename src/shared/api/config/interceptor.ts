@@ -1,13 +1,7 @@
 import ky from 'ky';
 
-interface RefreshTokenResponse {
-  timestamp: string;
-  data: {
-    accessToken: string;
-    tokenType: string;
-    expiresIn: number;
-  };
-}
+import {API_ENDPOINT} from '@/shared/api/end-point';
+import type {RefreshTokenResponse} from '@/shared/types/auth/type';
 
 const refreshApi = ky.create({
   prefix: import.meta.env.VITE_BASE_URL,
@@ -28,11 +22,17 @@ export const handleCheckAndSetToken = (request: Request) => {
 const refreshAccessToken = () => {
   if (!refreshPromise) {
     refreshPromise = refreshApi
-      .post('/api/auth/token/refresh')
+      .post(API_ENDPOINT.auth.refreshToken)
       .json<RefreshTokenResponse>()
       .then(({data}) => {
-        localStorage.setItem('accessToken', data.accessToken);
-        return data.accessToken;
+        const accessToken = data?.accessToken;
+
+        if (!accessToken) {
+          throw new Error('토큰 재발급 응답에 accessToken이 없습니다.');
+        }
+
+        localStorage.setItem('accessToken', accessToken);
+        return accessToken;
       })
       .finally(() => {
         refreshPromise = null;
