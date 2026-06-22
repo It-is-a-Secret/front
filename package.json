@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "build:icons": "tsx script/build-icons.ts",
+    "generate:types": "openapi-typescript http://3.35.197.0/v3/api-docs -o ./src/shared/types/schema.ts",
     "lint": "eslint .",
     "preview": "vite preview"
   },
