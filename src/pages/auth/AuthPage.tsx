@@ -11,19 +11,38 @@ import {CodeAuthStep} from '@/pages/auth/steps/CodeAuthStep';
 import {CompleteAuthStep} from '@/pages/auth/steps/CompleteAuthStep';
 import {EmailAuthStep} from '@/pages/auth/steps/EmailAuthStep';
 import {LoginAuthStep} from '@/pages/auth/steps/LoginAuthStep';
+import {API_ENDPOINT} from '@/shared/api/end-point';
 import {Header} from '@/shared/components/Header';
 import {IcSvgLeft} from '@/shared/icons';
 
 export const AuthPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const stepParam = searchParams.get('step');
   const initialStep: AuthStep =
-    searchParams.get('step') === 'complete' ? 'complete' : 'login';
+    stepParam === 'email' || stepParam === 'complete' ? stepParam : 'login';
   const [step, setStep] = useState<AuthStep>(initialStep);
   const [emailId, setEmailId] = useState('');
   const [code, setCode] = useState('');
 
   const email = `${emailId || AUTH_MOCK.emailId}${AUTH_EMAIL_DOMAIN}`;
+
+  const handleKakaoLogin = () => {
+    const kakaoAuthorizeUrl = new URL(
+      API_ENDPOINT.auth.kakaoAuthorize,
+      import.meta.env.VITE_BASE_URL,
+    );
+
+    const redirectUri = new URL(
+      '/auth/callback',
+      window.location.origin,
+    ).toString();
+
+    sessionStorage.setItem('kakaoRedirectUri', redirectUri);
+    kakaoAuthorizeUrl.searchParams.set('redirect_uri', redirectUri);
+
+    window.location.href = kakaoAuthorizeUrl.toString();
+  };
 
   const handleBackToEmail = () => {
     setCode('');
@@ -69,7 +88,7 @@ export const AuthPage = () => {
   };
 
   if (step === 'login') {
-    return <LoginAuthStep onKakaoLogin={() => setStep('email')} />;
+    return <LoginAuthStep onKakaoLogin={handleKakaoLogin} />;
   }
 
   if (step === 'complete') {
