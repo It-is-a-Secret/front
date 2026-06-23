@@ -3,6 +3,7 @@ import {createBrowserRouter, Navigate} from 'react-router-dom';
 import {BottomNavLayout} from '@/app/layout/BottomNavLayout';
 import {Layout} from '@/app/layout/layout';
 import {PrivateRoute} from '@/app/router/PrivateRoute';
+import {AuthCallbackPage} from '@/pages/auth/AuthCallbackPage';
 import {AuthPage} from '@/pages/auth/AuthPage';
 import {ChatPage} from '@/pages/chat/ChatPage';
 import {HomePage} from '@/pages/home/HomePage';
@@ -16,6 +17,14 @@ export const router = createBrowserRouter([
     element: (
       <Layout>
         <AuthPage />
+      </Layout>
+    ),
+  },
+  {
+    path: '/auth/callback',
+    element: (
+      <Layout>
+        <AuthCallbackPage />
       </Layout>
     ),
   },

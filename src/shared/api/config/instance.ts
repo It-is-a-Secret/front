@@ -5,6 +5,12 @@ import {
   handleUnauthorizedResponse,
 } from '@/shared/api/config/interceptor';
 
+export const publicApi = ky.create({
+  prefix: import.meta.env.VITE_BASE_URL,
+  credentials: 'include',
+  retry: 0,
+});
+
 export const api = ky.create({
   prefix: import.meta.env.VITE_BASE_URL,
   credentials: 'include',
