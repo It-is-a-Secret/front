@@ -6,6 +6,7 @@ import {PrivateRoute} from '@/app/router/PrivateRoute';
 import {AuthCallbackPage} from '@/pages/auth/AuthCallbackPage';
 import {AuthPage} from '@/pages/auth/AuthPage';
 import {ChatPage} from '@/pages/chat/ChatPage';
+import {ChatRoom} from '@/pages/chat/ChatRoom';
 import {HomePage} from '@/pages/home/HomePage';
 import {MyPage} from '@/pages/my/MyPage';
 import {OnboardingPage} from '@/pages/onboarding/OnboardingPage';
@@ -70,7 +71,7 @@ export const router = createBrowserRouter([
       },
       {
         path: '/chat/:roomId',
-        element: <ChatPage />,
+        element: <ChatRoom />,
       },
     ],
   },
