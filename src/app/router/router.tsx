@@ -34,7 +34,7 @@ export const router = createBrowserRouter([
     children: [
       {
         path: '/',
-        element: <Navigate to="/auth" replace />,
+        element: <Navigate to='/auth' replace />,
       },
       {
         path: '/onboarding',
@@ -71,12 +71,13 @@ export const router = createBrowserRouter([
       },
       {
         path: '/chat/:roomId',
+
         element: <ChatRoom />,
       },
     ],
   },
   {
     path: '*',
-    element: <Navigate to="/auth" replace />,
+    element: <Navigate to='/auth' replace />,
   },
 ]);

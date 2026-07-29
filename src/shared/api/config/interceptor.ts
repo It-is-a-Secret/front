@@ -1,5 +1,10 @@
 import ky from 'ky';
 
+import {
+  clearAccessToken,
+  getAccessToken,
+  setAccessToken,
+} from '@/shared/api/config/auth-token';
 import {API_ENDPOINT} from '@/shared/api/end-point';
 import type {RefreshTokenResponse} from '@/shared/types/auth/type';
 
@@ -12,7 +17,7 @@ const refreshApi = ky.create({
 let refreshPromise: Promise<string> | null = null;
 
 export const handleCheckAndSetToken = (request: Request) => {
-  const token = localStorage.getItem('accessToken');
+  const token = getAccessToken();
 
   if (token) {
     request.headers.set('Authorization', `Bearer ${token}`);
@@ -31,7 +36,7 @@ const refreshAccessToken = () => {
           throw new Error('토큰 재발급 응답에 accessToken이 없습니다.');
         }
 
-        localStorage.setItem('accessToken', accessToken);
+        setAccessToken(accessToken);
         return accessToken;
       })
       .finally(() => {
@@ -68,7 +73,7 @@ export const handleUnauthorizedResponse = async ({
       request: new Request(request, {headers}),
     });
   } catch {
-    localStorage.removeItem('accessToken');
+    clearAccessToken();
     window.location.replace('/auth');
 
     return response;
