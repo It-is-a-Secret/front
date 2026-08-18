@@ -1,5 +1,5 @@
-import {useRef, useState} from 'react';
-import type {MouseEvent, PointerEvent} from 'react';
+import useEmblaCarousel from 'embla-carousel-react';
+import {useCallback, useEffect, useState} from 'react';
 
 import {SwipeCard} from '@/pages/home/components/SwipeCard';
 import {IcSvgLeft} from '@/shared/icons';
@@ -17,114 +17,80 @@ interface SwipeProps {
   users: SwipeUser[];
 }
 
-const SWIPE_THRESHOLD = 80;
-const VISIBLE_CARD_COUNT = 3;
+const EMBLA_OPTIONS = {
+  align: 'center',
+  containScroll: 'trimSnaps',
+  loop: false,
+} as const;
 
 export const Swipe = ({users}: SwipeProps) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [dragOffset, setDragOffset] = useState(0);
-  const startXRef = useRef(0);
-  const dragOffsetRef = useRef(0);
-  const isPointerDownRef = useRef(false);
-  const didDragRef = useRef(false);
+  const [emblaRef, emblaApi] = useEmblaCarousel(EMBLA_OPTIONS);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [canMovePrev, setCanMovePrev] = useState(false);
+  const [canMoveNext, setCanMoveNext] = useState(false);
 
-  const canMovePrev = currentIndex > 0;
-  const canMoveNext = currentIndex < users.length - 1;
-
-  const handlePrev = () => {
-    if (canMovePrev) {
-      setCurrentIndex((prevIndex) => prevIndex - 1);
-    }
-  };
-
-  const handleNext = () => {
-    if (canMoveNext) {
-      setCurrentIndex((prevIndex) => prevIndex + 1);
-    }
-  };
-
-  const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    startXRef.current = event.clientX;
-    dragOffsetRef.current = 0;
-    isPointerDownRef.current = true;
-    didDragRef.current = false;
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
-
-  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    if (!isPointerDownRef.current) {
+  const updateCarouselState = useCallback(() => {
+    if (!emblaApi) {
       return;
     }
 
-    const nextDragOffset = event.clientX - startXRef.current;
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+    setCanMovePrev(emblaApi.canScrollPrev());
+    setCanMoveNext(emblaApi.canScrollNext());
+  }, [emblaApi]);
 
-    if (Math.abs(nextDragOffset) > 6) {
-      didDragRef.current = true;
+  useEffect(() => {
+    if (!emblaApi) {
+      return;
     }
 
-    dragOffsetRef.current = nextDragOffset;
-    setDragOffset(nextDragOffset);
-  };
+    queueMicrotask(updateCarouselState);
+    emblaApi.on('select', updateCarouselState);
+    emblaApi.on('reInit', updateCarouselState);
 
-  const handlePointerEnd = () => {
-    const currentDragOffset = dragOffsetRef.current;
+    return () => {
+      emblaApi.off('select', updateCarouselState);
+      emblaApi.off('reInit', updateCarouselState);
+    };
+  }, [emblaApi, updateCarouselState]);
 
-    if (currentDragOffset <= -SWIPE_THRESHOLD) {
-      handleNext();
-    }
+  const handlePrev = useCallback(() => {
+    emblaApi?.scrollPrev();
+  }, [emblaApi]);
 
-    if (currentDragOffset >= SWIPE_THRESHOLD) {
-      handlePrev();
-    }
-
-    isPointerDownRef.current = false;
-    dragOffsetRef.current = 0;
-    setDragOffset(0);
-  };
-
-  const handleClickCapture = (event: MouseEvent<HTMLDivElement>) => {
-    if (didDragRef.current) {
-      event.preventDefault();
-      event.stopPropagation();
-      didDragRef.current = false;
-    }
-  };
+  const handleNext = useCallback(() => {
+    emblaApi?.scrollNext();
+  }, [emblaApi]);
 
   return (
     <div className='relative h-full w-full overflow-hidden'>
-      {users
-        .slice(currentIndex, currentIndex + VISIBLE_CARD_COUNT)
-        .map((user, index) => {
-          const isFrontCard = index === 0;
-          const sideOffset = index % 2 === 0 ? -1 : 1;
-          const stackTranslateX = isFrontCard
-            ? dragOffset
-            : sideOffset * index * 1.6 * 10;
-          const stackScale = 1 - index * 0.04;
+      <div className='bg-white-800 pointer-events-none absolute top-[1.2rem] left-[44%] h-[calc(100%-2.4rem)] w-[82%] -translate-x-1/2 -rotate-[4deg] rounded-[3.2rem] opacity-50' />
+      <div className='bg-white-800 pointer-events-none absolute top-[1.2rem] left-[56%] h-[calc(100%-2.4rem)] w-[82%] -translate-x-1/2 rotate-[4deg] rounded-[3.2rem] opacity-50' />
 
-          return (
-            <div
-              key={user.userId}
-              className={`absolute inset-0 flex justify-center ${
-                isFrontCard
-                  ? 'z-30 touch-pan-y cursor-grab select-none active:cursor-grabbing'
-                  : 'pointer-events-none transition-transform duration-200'
-              }`}
-              style={{
-                zIndex: VISIBLE_CARD_COUNT - index,
-                opacity: isFrontCard ? 1 : 0.42,
-                transform: `translateX(${stackTranslateX}px) scale(${stackScale})`,
-                transitionDuration: isFrontCard && dragOffset !== 0 ? '0ms' : undefined,
-              }}
-              onPointerDown={isFrontCard ? handlePointerDown : undefined}
-              onPointerMove={isFrontCard ? handlePointerMove : undefined}
-              onPointerUp={isFrontCard ? handlePointerEnd : undefined}
-              onPointerCancel={isFrontCard ? handlePointerEnd : undefined}
-              onClickCapture={isFrontCard ? handleClickCapture : undefined}>
-              <SwipeCard {...user} />
-            </div>
-          );
-        })}
+      <div ref={emblaRef} className='relative z-10 h-full overflow-hidden'>
+        <div className='flex h-full touch-pan-y'>
+          {users.map((user, index) => {
+            const isSelected = index === selectedIndex;
+
+            return (
+              <div
+                key={user.userId}
+                className='flex min-w-0 flex-[0_0_82%] justify-center px-[0.8rem]'>
+                <div
+                  className={`h-full w-full transition-transform duration-200 ${
+                    isSelected ? 'pointer-events-auto' : 'pointer-events-none'
+                  }`}
+                  style={{
+                    opacity: isSelected ? 1 : 0,
+                    transform: `scale(${isSelected ? 1 : 0.96})`,
+                  }}>
+                  <SwipeCard {...user} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       <button
         type='button'
