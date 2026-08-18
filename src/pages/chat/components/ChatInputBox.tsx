@@ -43,7 +43,7 @@ export const ChatInputBox = ({
           placeholder={placeholder}
           value={value}
           onChange={(event) => onValueChange(event.target.value)}
-          className='text-input1-14r bg-primary-400 text-white-800 flex-1 rounded-[4px] px-[1.6rem] py-[0.8rem] outline-none'
+          className='text-input1-14r bg-primary-400 placeholder:text-white-800 flex-1 rounded-[4px] px-[1.6rem] py-[0.8rem] text-gray-800 outline-none'
         />
 
         <button

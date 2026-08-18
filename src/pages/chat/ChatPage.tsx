@@ -3,7 +3,6 @@ import {
   type ChatListItemProps,
 } from '@/pages/chat/components/ChatListItem';
 import {Header} from '@/shared/components/Header';
-import {IcSvgHumbleiconsHeart} from '@/shared/icons';
 
 const createMockDateTime = (diffMs: number) =>
   new Date(Date.now() - diffMs).toISOString();
@@ -59,9 +58,6 @@ export const ChatPage = () => {
           <h1 className='text-bold-24 text-gray-800'>
             Blur<span className='text-primary'>Some</span>
           </h1>
-        }
-        rightItem={
-          <IcSvgHumbleiconsHeart className='size-[3.2rem] text-gray-800' />
         }
       />
       <ul>
