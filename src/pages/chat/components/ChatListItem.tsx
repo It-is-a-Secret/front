@@ -4,7 +4,6 @@ import {formatChatRelativeTime} from '@/pages/chat/utils/format-chat-time';
 
 export interface ChatListItemProps {
   chatRoomId: number;
-  imgUrl: string;
   nickname: string;
   lastMessage: string;
   lastMessageCreatedAt: string | null;
@@ -15,7 +14,6 @@ export interface ChatListItemProps {
 
 export const ChatListItem = ({
   chatRoomId,
-  imgUrl,
   nickname,
   lastMessage,
   lastMessageCreatedAt,
@@ -32,19 +30,14 @@ export const ChatListItem = ({
       <Link
         className='flex h-[7.3rem] gap-2 py-[1rem]'
         to={`/chat/${chatRoomId}`}>
-        <div className='relative shrink-0'>
-          <img
-            src={imgUrl}
-            alt={`${nickname} 프로필 사진`}
-            className='size-[48px] rounded-full object-cover'
-          />
-          <span className='text-button2-10r bg-primary text-white-800 absolute right-0 bottom-0 h-[1.6rem] w-[2.7rem] rounded-[12px] px-[0.6rem] py-[0.1px] text-center'>
-            {publicPhotoCount}/5
-          </span>
-        </div>
         <div className='flex w-full justify-between gap-[10px]'>
           <div className=''>
-            <p className='text-body2-15sb'>{nickname}</p>
+            <div className='flex items-center gap-[0.5rem]'>
+              <p className='text-body2-15sb'>{nickname}</p>
+              <span className='text-button2-10r bg-primary text-white-800 h-[1.6rem] w-[2.7rem] rounded-[12px] px-[0.6rem] py-[0.1px] text-center'>
+                {publicPhotoCount}/5
+              </span>
+            </div>
             <p className='text-input1-14r w-[24.6rem] truncate text-gray-600'>
               {lastMessage}
             </p>

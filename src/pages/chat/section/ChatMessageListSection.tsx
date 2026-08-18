@@ -1,4 +1,5 @@
 import {ChatMessage} from '@/pages/chat/components/ChatMessage';
+import {SystemMessage} from '@/pages/chat/components/SystemMessage';
 
 const MOCK_MESSAGES = [
   {
@@ -33,7 +34,14 @@ export const ChatMessageListSection = () => {
   return (
     <section className='min-h-0 flex-1 overflow-y-auto px-[2rem] py-[2.4rem]'>
       <ul className='flex flex-col gap-[1.6rem]'>
-        {MOCK_MESSAGES.map((message) => (
+        <ChatMessage
+          content={MOCK_MESSAGES[0].content}
+          sentAt={MOCK_MESSAGES[0].sentAt}
+          isMine={MOCK_MESSAGES[0].isMine}
+          isRead={MOCK_MESSAGES[0].isRead}
+        />
+        <SystemMessage displayOrder={1} />
+        {MOCK_MESSAGES.slice(1).map((message) => (
           <ChatMessage
             key={message.id}
             content={message.content}

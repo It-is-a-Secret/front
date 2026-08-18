@@ -13,7 +13,7 @@ export const ChatMessage = ({
 }: ChatMessageProps) => {
   const meta = (
     <span className='text-caption1-12r text-gray-800'>
-      {isMine && (isRead ? '' : '안읽음·')}
+      {isMine && (isRead ? '' : '안읽음•')}
       {sentAt}
     </span>
   );
