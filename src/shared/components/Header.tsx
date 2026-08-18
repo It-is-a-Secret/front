@@ -1,6 +1,7 @@
 import type {ReactNode} from 'react';
 
 interface HeaderProps {
+  className?: string;
   title?: ReactNode;
   onClickLeft?: () => void;
   leftItem?: ReactNode;
@@ -11,6 +12,7 @@ interface HeaderProps {
 }
 
 export const Header = ({
+  className = '',
   title,
   rightItem,
   leftItem,
@@ -20,8 +22,8 @@ export const Header = ({
   progress = 0,
 }: HeaderProps) => {
   return (
-    <article className='flex flex-col'>
-      <div className='grid h-[5.4rem] grid-cols-[8rem_1fr_8rem] items-center'>
+    <article className={`flex flex-col ${className}`}>
+      <div className='grid h-[5.2rem] grid-cols-[8rem_1fr_8rem] items-center'>
         <div className='flex justify-start'>
           {leftItem && (
             <button type='button' onClick={onClickLeft}>

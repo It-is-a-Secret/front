@@ -2,13 +2,25 @@
 // Run `pnpm build:icons` to regenerate.
 
 export {default as IcSvgHumbleiconsHeart} from './ic-humbleicons-heart';
+export {default as IcSvgBell} from './ic-bell';
+export {default as IcSvgBlock} from './ic-block';
 export {default as IcSvgChat} from './ic-chat';
 export {default as IcSvgChat2} from './ic-chat2';
+export {default as IcSvgCheck} from './ic-check';
+export {default as IcSvgDeclaration} from './ic-declaration';
+export {default as IcSvgDelete} from './ic-delete';
+export {default as IcSvgError} from './ic-error';
 export {default as IcSvgEtc} from './ic-etc';
+export {default as IcSvgExit} from './ic-exit';
 export {default as IcSvgHome} from './ic-home';
 export {default as IcSvgHome2} from './ic-home2';
+export {default as IcSvgImage} from './ic-image';
 export {default as IcSvgLeft} from './ic-left';
+export {default as IcSvgLeft2} from './ic-left2';
 export {default as IcSvgMy} from './ic-my';
 export {default as IcSvgMy2} from './ic-my2';
 export {default as IcSvgPlus} from './ic-plus';
+export {default as IcSvgRight} from './ic-right';
 export {default as IcSvgSearch} from './ic-search';
+export {default as IcSvgSecession} from './ic-secession';
+export {default as IcSvgSend} from './ic-send';
