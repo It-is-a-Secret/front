@@ -24,3 +24,6 @@ export {default as IcSvgRight} from './ic-right';
 export {default as IcSvgSearch} from './ic-search';
 export {default as IcSvgSecession} from './ic-secession';
 export {default as IcSvgSend} from './ic-send';
+export {default as IcSvgWithdrawalCalendar} from './ic-withdrawal-calendar';
+export {default as IcSvgWithdrawalChat} from './ic-withdrawal-chat';
+export {default as IcSvgWithdrawalProfile} from './ic-withdrawal-profile';
