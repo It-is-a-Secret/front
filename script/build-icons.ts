@@ -143,7 +143,10 @@ async function main() {
         ''
       );
 
-      content = content.replace(/const Svg[^ ]+ =/, `const ${componentName} =`);
+      content = content.replace(
+        /const\s+Svg[A-Za-z0-9_$]+\s*=/,
+        `const ${componentName} =`
+      );
       content = content.replace(
         /export default Svg[^;]+;/,
         `export default ${componentName};`

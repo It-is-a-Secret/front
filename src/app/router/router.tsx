@@ -9,6 +9,7 @@ import {ChatPage} from '@/pages/chat/ChatPage';
 import {ChatRoom} from '@/pages/chat/ChatRoom';
 import {HomePage} from '@/pages/home/HomePage';
 import {MyPage} from '@/pages/my/MyPage';
+import {ProfileEditPage} from '@/pages/my/ProfileEditPage';
 import {OnboardingPage} from '@/pages/onboarding/OnboardingPage';
 import {ProfilePage} from '@/pages/profile/ProfilePage';
 
@@ -60,6 +61,14 @@ export const router = createBrowserRouter([
             element: <MyPage />,
           },
         ],
+      },
+      {
+        path: '/my/profile-edit',
+        element: (
+          <Layout>
+            <ProfileEditPage />
+          </Layout>
+        ),
       },
       {
         path: '/profile/:userId',

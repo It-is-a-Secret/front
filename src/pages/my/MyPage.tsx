@@ -1,3 +1,7 @@
 export const MyPage = () => {
-  return <></>
-}
+  return (
+    <main>
+      <section></section>
+    </main>
+  );
+};

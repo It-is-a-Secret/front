@@ -28,7 +28,7 @@ const MOCK_USERS: SwipeUser[] = [
 
 export const HomePage = () => {
   return (
-    <section className='flex min-h-dvh flex-col'>
+    <main className='flex min-h-dvh flex-col'>
       <Header
         title={
           <h1 className='text-bold-24 text-gray-800'>
@@ -43,6 +43,6 @@ export const HomePage = () => {
       <div className='mt-[2.5rem] h-[calc(100dvh-5.4rem-2.5rem-12rem)]'>
         <Swipe users={MOCK_USERS} />
       </div>
-    </section>
+    </main>
   );
 };
