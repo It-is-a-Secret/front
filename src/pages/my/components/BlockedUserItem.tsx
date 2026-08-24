@@ -12,7 +12,7 @@ export const BlockedUserItem = ({
   onClick,
 }: BlockedUserItemProps) => {
   return (
-    <div className='bg-white-800 flex w-full flex-col gap-[0.7rem] p-[1.6rem]'>
+    <div className='bg-white-800 flex h-[8.9rem] w-full flex-col gap-[0.7rem] p-[1.6rem]'>
       <div className='flex justify-between'>
         <span className='text-body4-16m'>{userName}</span>
         <span className='text-caption1-12r text-gray-600'>{blockTime}</span>
