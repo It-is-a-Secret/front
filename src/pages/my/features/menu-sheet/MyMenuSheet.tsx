@@ -27,7 +27,7 @@ export const MyMenuSheet = ({type, onClose}: MyMenuSheetProps) => {
   };
 
   return (
-    <section className='bg-background fixed inset-0 z-[60] mx-auto min-h-dvh w-full min-w-[375px] max-w-[430px] px-[2rem]'>
+    <section className='bg-background fixed inset-0 z-[60] mx-auto min-h-dvh w-full min-w-[375px] max-w-[430px] overflow-y-auto px-[2rem]'>
       {renderContent()}
     </section>
   );
