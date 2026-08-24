@@ -3,6 +3,10 @@ import {useNavigate} from 'react-router-dom';
 
 import {MyMenuItem} from '@/pages/my/components/MyMenuItem';
 import {Profile} from '@/pages/my/components/Profile';
+import {
+  MyMenuSheet,
+  type MyMenuSheetType,
+} from '@/pages/my/features/menu-sheet/MyMenuSheet';
 import {Header} from '@/shared/components/Header';
 import {
   IcSvgBell,
@@ -15,6 +19,8 @@ import {
 export const MyPage = () => {
   const navigate = useNavigate();
   const [isChatNotificationOn, setIsChatNotificationOn] = useState(true);
+  const [selectedMenuSheet, setSelectedMenuSheet] =
+    useState<MyMenuSheetType | null>(null);
 
   return (
     <main className='flex min-h-dvh flex-col'>
@@ -51,7 +57,7 @@ export const MyPage = () => {
             type='click'
             Icon={IcSvgBlock}
             label='차단 목록'
-            onClick={() => {}}
+            onClick={() => setSelectedMenuSheet('blocked')}
           />
           <MyMenuItem
             type='click'
@@ -76,6 +82,10 @@ export const MyPage = () => {
           />
         </div>
       </section>
+      <MyMenuSheet
+        type={selectedMenuSheet}
+        onClose={() => setSelectedMenuSheet(null)}
+      />
     </main>
   );
 };
