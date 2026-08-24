@@ -14,15 +14,23 @@ export const MyMenuSheet = ({type, onClose}: MyMenuSheetProps) => {
     return null;
   }
 
-  if (type === 'blocked') {
-    return <BlockedUsersSheet onClose={onClose} />;
-  }
+  const renderContent = () => {
+    if (type === 'blocked') {
+      return <BlockedUsersSheet onClose={onClose} />;
+    }
 
-  if (type === 'policies') {
-    return <PoliciesSheet onClose={onClose} />;
-  }
+    if (type === 'policies') {
+      return <PoliciesSheet onClose={onClose} />;
+    }
 
-  return <SecessionSheet onClose={onClose} />;
+    return <SecessionSheet onClose={onClose} />;
+  };
+
+  return (
+    <section className='bg-background fixed inset-0 z-[60] mx-auto min-h-dvh w-full min-w-[375px] max-w-[430px] overflow-y-auto px-[2rem]'>
+      {renderContent()}
+    </section>
+  );
 };
 
 export type {MyMenuSheetType};
