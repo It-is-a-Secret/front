@@ -20,7 +20,9 @@ export const Department = ({
             type='button'
             aria-pressed={isSelected}
             className={`text-medium-15 flex w-full items-center border-b border-gray-200 px-[1.2rem] py-[1.6rem] text-left ${
-              isSelected ? 'text-primary' : 'text-gray-800'
+              isSelected
+                ? 'bg-primary text-white-800'
+                : 'text-gray-800'
             }`}
             onClick={() => onSelectDepartment(department)}>
             {department}
