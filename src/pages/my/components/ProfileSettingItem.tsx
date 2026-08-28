@@ -14,7 +14,7 @@ export const ProfileSettingItem = ({
   return (
     <button
       type='button'
-      className='flex w-full justify-between p-[1.6rem]'
+      className='flex w-full items-center justify-between p-[1.6rem]'
       onClick={onClick}>
       <span className='text-body2-15sb'>{label}</span>
       <span className='flex items-center text-gray-600'>

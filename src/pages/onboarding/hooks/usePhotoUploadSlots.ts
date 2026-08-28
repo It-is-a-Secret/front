@@ -12,17 +12,24 @@ export interface PhotoSlot {
   previewUrl: string | null;
 }
 
-const INITIAL_PHOTO_SLOTS: PhotoSlot[] = Array.from(
-  {length: PHOTO_SLOT_COUNT},
-  (_, index) => ({id: `photo-slot-${index + 1}`, file: null, previewUrl: null})
-);
+const createInitialPhotoSlots = (
+  initialPreviewUrls: readonly string[] = []
+): PhotoSlot[] =>
+  Array.from({length: PHOTO_SLOT_COUNT}, (_, index) => ({
+    id: `photo-slot-${index + 1}`,
+    file: null,
+    previewUrl: initialPreviewUrls[index] ?? null,
+  }));
 
-export const usePhotoUploadSlots = () => {
-  const [photoSlots, setPhotoSlots] =
-    useState<PhotoSlot[]>(INITIAL_PHOTO_SLOTS);
+export const usePhotoUploadSlots = (
+  initialPreviewUrls: readonly string[] = []
+) => {
+  const [photoSlots, setPhotoSlots] = useState<PhotoSlot[]>(() =>
+    createInitialPhotoSlots(initialPreviewUrls)
+  );
   const previewUrlsRef = useRef<Set<string>>(new Set());
 
-  const uploadedPhotoCount = photoSlots.filter((slot) => slot.file).length;
+  const uploadedPhotoCount = photoSlots.filter((slot) => slot.previewUrl).length;
 
   useEffect(() => {
     const previewUrls = previewUrlsRef.current;
@@ -33,6 +40,15 @@ export const usePhotoUploadSlots = () => {
     };
   }, []);
 
+  const revokePreviewUrl = (previewUrl: string) => {
+    if (!previewUrlsRef.current.has(previewUrl)) {
+      return;
+    }
+
+    URL.revokeObjectURL(previewUrl);
+    previewUrlsRef.current.delete(previewUrl);
+  };
+
   const handlePhotoChange = (id: string, file: File) => {
     setPhotoSlots((slots) =>
       slots.map((slot) => {
@@ -41,8 +57,7 @@ export const usePhotoUploadSlots = () => {
         }
 
         if (slot.previewUrl) {
-          URL.revokeObjectURL(slot.previewUrl);
-          previewUrlsRef.current.delete(slot.previewUrl);
+          revokePreviewUrl(slot.previewUrl);
         }
 
         const previewUrl = URL.createObjectURL(file);
@@ -65,8 +80,7 @@ export const usePhotoUploadSlots = () => {
         }
 
         if (slot.previewUrl) {
-          URL.revokeObjectURL(slot.previewUrl);
-          previewUrlsRef.current.delete(slot.previewUrl);
+          revokePreviewUrl(slot.previewUrl);
         }
 
         return {
