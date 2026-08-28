@@ -89,7 +89,7 @@ export const BIRTH_YEARS = Array.from(
   (_, index) => 2007 - index
 );
 
-export const BLUR_STRENGTHS = [50, 60, 70, 80, 90] as const;
+export const BLUR_STRENGTHS = [50, 60, 70, 80, 90, 100] as const;
 export type BlurStrength = (typeof BLUR_STRENGTHS)[number];
 
 export const DEPARTMENTS = [
