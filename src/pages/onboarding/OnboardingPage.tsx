@@ -7,6 +7,7 @@ import {
   ONBOARDING_STEPS,
 } from '@/pages/onboarding/constants/constants';
 import type {
+  BlurStrength,
   GenderType,
   InterestItem,
   InterestStep,
@@ -16,6 +17,7 @@ import type {
 } from '@/pages/onboarding/constants/constants';
 import {MAX_INTEREST_COUNT} from '@/pages/onboarding/constants/constants';
 import {BirthYearStep} from '@/pages/onboarding/steps/BirthYearStep';
+import {BlurStrengthStep} from '@/pages/onboarding/steps/BlurStrengthStep';
 import {CompleteOnboardingStep} from '@/pages/onboarding/steps/CompleteOnboardingStep';
 import {ContactRelationshipStep} from '@/pages/onboarding/steps/ContactRelationshipStep';
 import {DateStyleStep} from '@/pages/onboarding/steps/DateStyleStep';
@@ -41,6 +43,7 @@ export const OnboardingPage = () => {
   const [selectedGender, setSelectedGender] = useState<GenderType | null>(null);
   const [department, setDepartment] = useState('');
   const [selectedMbti, setSelectedMbti] = useState<MbtiType | null>(null);
+  const [blurStrength, setBlurStrength] = useState<BlurStrength>(70);
   const [selectedInterests, setSelectedInterests] =
     useState<SelectedInterests>({});
 
@@ -191,6 +194,13 @@ export const OnboardingPage = () => {
             onToggleInterest={(item) =>
               handleToggleInterest('valueInterest', item)
             }
+          />
+        );
+      case 'blurStrength':
+        return (
+          <BlurStrengthStep
+            blurStrength={blurStrength}
+            onBlurStrengthChange={setBlurStrength}
           />
         );
       case 'photoUpload':

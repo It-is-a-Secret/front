@@ -38,6 +38,7 @@ export type OnboardingStep =
   | 'department'
   | 'mbti'
   | InterestStep
+  | 'blurStrength'
   | 'photoUpload'
   | 'complete';
 
@@ -59,6 +60,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   'department',
   'mbti',
   ...INTEREST_STEPS,
+  'blurStrength',
   'photoUpload',
   'complete',
 ];
@@ -76,7 +78,8 @@ export const ONBOARDING_STEP_PROGRESS: Record<OnboardingStep, number> = {
   dateStyle: 70,
   contactRelationship: 77,
   pet: 84,
-  valueInterest: 91,
+  valueInterest: 88,
+  blurStrength: 94,
   photoUpload: 100,
   complete: 100,
 };
@@ -85,6 +88,9 @@ export const BIRTH_YEARS = Array.from(
   {length: 2007 - 2000 + 1},
   (_, index) => 2007 - index
 );
+
+export const BLUR_STRENGTHS = [50, 60, 70, 80, 90] as const;
+export type BlurStrength = (typeof BLUR_STRENGTHS)[number];
 
 export const DEPARTMENTS = [
   '국어국문학과',
