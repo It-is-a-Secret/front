@@ -27,3 +27,4 @@ export {default as IcSvgSend} from './ic-send';
 export {default as IcSvgWithdrawalCalendar} from './ic-withdrawal-calendar';
 export {default as IcSvgWithdrawalChat} from './ic-withdrawal-chat';
 export {default as IcSvgWithdrawalProfile} from './ic-withdrawal-profile';
+export {default as IcSvgX} from './ic-x';
