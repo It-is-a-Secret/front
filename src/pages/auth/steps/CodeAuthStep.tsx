@@ -34,7 +34,7 @@ export const CodeAuthStep = ({
         />
       </div>
 
-      <div className='mt-auto flex flex-col pb-[3.8rem]'>
+      <div className='mt-auto flex flex-col gap-[0.8rem] pb-[3.8rem]'>
         <button
           type='button'
           className='text-button1-14b border-primary text-primary w-full rounded-[20px] border bg-transparent p-[1.55rem]'

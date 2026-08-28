@@ -19,31 +19,67 @@ export const MBTI_TYPES = [
 
 export type MbtiType = (typeof MBTI_TYPES)[number];
 
+export type GenderType = 'male' | 'female';
+
+export type InterestStep =
+  | 'hobby'
+  | 'foodStyle'
+  | 'lifeStyle'
+  | 'personalityConversation'
+  | 'dateStyle'
+  | 'contactRelationship'
+  | 'pet'
+  | 'valueInterest';
+
 export type OnboardingStep =
   | 'nickname'
+  | 'gender'
   | 'birthYear'
   | 'department'
   | 'mbti'
-  | 'category'
+  | InterestStep
+  | 'blurStrength'
   | 'photoUpload'
   | 'complete';
 
+export const INTEREST_STEPS: InterestStep[] = [
+  'hobby',
+  'foodStyle',
+  'lifeStyle',
+  'personalityConversation',
+  'dateStyle',
+  'contactRelationship',
+  'pet',
+  'valueInterest',
+];
+
 export const ONBOARDING_STEPS: OnboardingStep[] = [
   'nickname',
+  'gender',
   'birthYear',
   'department',
   'mbti',
-  'category',
+  ...INTEREST_STEPS,
+  'blurStrength',
   'photoUpload',
   'complete',
 ];
 
 export const ONBOARDING_STEP_PROGRESS: Record<OnboardingStep, number> = {
-  nickname: 16,
-  birthYear: 32,
-  department: 48,
-  mbti: 64,
-  category: 80,
+  nickname: 7,
+  gender: 14,
+  birthYear: 21,
+  department: 28,
+  mbti: 35,
+  hobby: 42,
+  foodStyle: 49,
+  lifeStyle: 56,
+  personalityConversation: 63,
+  dateStyle: 70,
+  contactRelationship: 77,
+  pet: 84,
+  valueInterest: 88,
+  blurStrength: 94,
   photoUpload: 100,
   complete: 100,
 };
@@ -52,6 +88,9 @@ export const BIRTH_YEARS = Array.from(
   {length: 2007 - 2000 + 1},
   (_, index) => 2007 - index
 );
+
+export const BLUR_STRENGTHS = [50, 60, 70, 80, 90] as const;
+export type BlurStrength = (typeof BLUR_STRENGTHS)[number];
 
 export const DEPARTMENTS = [
   '국어국문학과',
@@ -90,127 +129,94 @@ export const INTEREST_CATEGORIES = [
   {
     category: '취미/여가',
     items: [
-      '러닝',
-      '헬스',
-      '등산',
-      '자전거',
-      '수영',
-      '요가/필라테스',
-      '클라이밍',
-      '독서',
-      '글쓰기',
-      '공부',
-      '전시/미술관',
-      '사진',
-      '드로잉',
-      '영화',
-      '드라마',
-      '애니',
-      '예능',
-      '유튜브',
-      '게임',
-      '보드게임',
-      '방탈출',
-      'PC방',
-      '음악감상',
-      '공연/콘서트',
-      '밴드/인디',
-      'K-POP',
-      '여행',
-      '캠핑',
-      '드라이브',
+      '운동',
       '산책',
+      '독서/글쓰기',
+      '전시/영화',
+      'OTT',
+      '게임',
+      '여행/캠핑',
+      '공연/콘서트',
     ],
   },
   {
-    category: '음식/카페',
+    category: '음식 스타일',
     items: [
-      '맛집탐방',
-      '카페투어',
-      '디저트',
-      '빵순이/빵돌이',
-      '커피러버',
-      '술',
-      '가성비',
-      '와인',
-      '맥주',
-      '위스키',
+      '디저트러버',
       '매운맛러버',
       '고기러버',
-      '회/해산물',
-      '채식지향',
+      '해산물러버',
+      '한식',
+      '양식',
+      '일식',
+      '가벼운음주',
     ],
   },
   {
-    category: '라이프스타일',
+    category: '라이프 스타일',
     items: [
       '집순이/집돌이',
       '밖순이/밖돌이',
+      '아침형',
+      '야행형',
       '즉흥',
       '계획형',
-      '아침형',
-      '밤형',
-      '느긋함',
-      '부지런함',
       '미니멀',
-      '감성',
-      '깔끔',
-      '꾸준함',
+      '맥시멈',
+      '깔끔함',
     ],
   },
   {
-    category: '성격/분위기',
+    category: '성격/대화 스타일',
     items: [
-      '유쾌함',
       '다정함',
+      '유쾌함',
       '차분함',
+      '활발함',
       '솔직함',
-      '배려',
-      '센스',
-      '수다',
-      '경청',
-      '리액션좋음',
-      '트렌디',
-      '진지토크',
+      '센스있음',
+      '수다쟁이',
+      '경청형',
+      '장난많음',
       '낯가림',
-      '친해지면 활발',
-      '감정표현 잘함',
+      '진지토크',
     ],
   },
   {
-    category: '연애/데이트 취향',
+    category: '데이트 취향',
     items: [
-      '대화데이트',
       '카페데이트',
-      '산책데이트',
       '맛집데이트',
-      '활동데이트',
-      '전시데이트',
-      '영화데이트',
-      '드라이브데이트',
-      '천천히',
-      '빠르게',
+      '영화/전시데이트',
+      '액티비티데이트',
+      '즉흥데이트',
+      '계획데이트',
+      '집데이트',
+      '드라이브',
+    ],
+  },
+  {
+    category: '연락/관계 스타일',
+    items: [
       '연락자주',
       '연락필요할때',
+      '빠른답장',
+      '느긋한답장',
+      '천천히친해짐',
+      '빠르게친해짐',
+      '표현많음',
+      '편안한관계',
       '기념일챙김',
-      '실용주의',
-      '선물은 마음',
     ],
   },
   {
-    category: '반려/동물',
+    category: '반려동물',
     items: [
-      '강아지',
-      '고양이',
-      '반려동물 있음',
-      '반려동물 좋아함',
-      '알레르기X',
-      '강아지상',
-      '고양이상',
-      '여우상',
-      '곰상',
-      '토끼상',
-      '사슴상',
+      '강아지좋아함',
+      '고양이좋아함',
+      '반려동물있음',
+      '반려동물없음',
+      '동물좋아함',
     ],
   },
   {
@@ -219,12 +225,11 @@ export const INTEREST_CATEGORIES = [
       '자기계발',
       '커리어',
       '재테크',
-      '취미부자',
-      '환경/제로웨이스트',
       '건강관리',
-      '마음챙김',
-      '인간관계중시',
+      '안정감',
+      '도전적인',
       '가족중시',
+      '인간관계중시',
     ],
   },
 ] as const;
@@ -232,3 +237,6 @@ export const INTEREST_CATEGORIES = [
 export type InterestCategory = (typeof INTEREST_CATEGORIES)[number];
 export type InterestCategoryName = InterestCategory['category'];
 export type InterestItem = InterestCategory['items'][number];
+export type SelectedInterests = Partial<Record<InterestStep, InterestItem[]>>;
+
+export const MAX_INTEREST_COUNT = 3;

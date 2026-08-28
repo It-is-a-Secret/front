@@ -1,8 +1,6 @@
 import {useRef, useState} from 'react';
 import type {PointerEvent} from 'react';
 
-import {IcSvgLeft} from '@/shared/icons';
-
 interface ProfileImageCarouselProps {
   images: string[];
 }
@@ -55,9 +53,9 @@ export const ProfileImageCarousel = ({images}: ProfileImageCarouselProps) => {
   };
 
   return (
-    <div className='flex flex-col items-center gap-[1.2rem]'>
+    <div className='flex flex-col items-center gap-[0.9rem]'>
       <div
-        className='relative aspect-square w-full touch-pan-y overflow-hidden rounded-[2rem] bg-gray-100'
+        className='relative aspect-square h-[38rem] w-full touch-pan-y overflow-hidden rounded-[2rem] bg-gray-100'
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerEnd}
@@ -69,24 +67,6 @@ export const ProfileImageCarousel = ({images}: ProfileImageCarouselProps) => {
             className='size-full object-cover'
           />
         )}
-
-        <button
-          type='button'
-          aria-label='이전 사진'
-          disabled={currentIndex === 0}
-          className='absolute top-1/2 left-[1.2rem] flex size-[3.2rem] -translate-y-1/2 items-center justify-center text-gray-400 disabled:opacity-30'
-          onClick={handlePrev}>
-          <IcSvgLeft className='size-[2.4rem]' />
-        </button>
-
-        <button
-          type='button'
-          aria-label='다음 사진'
-          disabled={currentIndex === images.length - 1}
-          className='absolute top-1/2 right-[1.2rem] flex size-[3.2rem] -translate-y-1/2 items-center justify-center text-gray-400 disabled:opacity-30'
-          onClick={handleNext}>
-          <IcSvgLeft className='size-[2.4rem] rotate-180' />
-        </button>
       </div>
 
       <div className='flex gap-[0.4rem]'>

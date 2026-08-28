@@ -3,6 +3,7 @@ import {useState} from 'react';
 import {BlockedUserItem} from '@/pages/my/components/BlockedUserItem';
 import {BottomSheet} from '@/shared/components/BottomSheet';
 import {Button} from '@/shared/components/Button';
+import {EmptyState} from '@/shared/components/EmptyState';
 import {Header} from '@/shared/components/Header';
 import {IcSvgLeft} from '@/shared/icons';
 
@@ -10,26 +11,17 @@ interface BlockedUsersSheetProps {
   onClose: () => void;
 }
 
-const MOCK_BLOCKED_USERS = [
-  {
-    userName: '새벽별별별별별별별별별별별',
-    description: '03년생· 정보전기전자공학과·ENTP',
-    blockTime: '2026.00.00',
-  },
-  {
-    userName: '새벽별',
-    description: '03년생· 컴퓨터공학과·ENTP',
-    blockTime: '2026.00.00',
-  },
-  {
-    userName: '행복한코딩러',
-    description: '00년생· 소프트웨어학과·INFP',
-    blockTime: '2026.00.00',
-  },
-];
+interface BlockedUser {
+  userName: string;
+  description: string;
+  blockTime: string;
+}
+
+const MOCK_BLOCKED_USERS: BlockedUser[] = [];
 
 export const BlockedUsersSheet = ({onClose}: BlockedUsersSheetProps) => {
   const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
+  const hasBlockedUsers = MOCK_BLOCKED_USERS.length > 0;
 
   const handleCloseUnblockSheet = () => {
     setSelectedUserName(null);
@@ -44,15 +36,26 @@ export const BlockedUsersSheet = ({onClose}: BlockedUsersSheetProps) => {
         }
         onClickLeft={onClose}
       />
-      <div className='mt-[2.7rem] divide-y divide-gray-200 overflow-hidden rounded-[16px] border border-gray-200'>
-        {MOCK_BLOCKED_USERS.map((user) => (
-          <BlockedUserItem
-            key={user.userName}
-            {...user}
-            onClick={() => setSelectedUserName(user.userName)}
+      {hasBlockedUsers ? (
+        <div className='mt-[2.7rem] divide-y divide-gray-200 overflow-hidden rounded-[16px] border border-gray-200'>
+          {MOCK_BLOCKED_USERS.map((user) => (
+            <BlockedUserItem
+              key={user.userName}
+              {...user}
+              onClick={() => setSelectedUserName(user.userName)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className='flex min-h-[calc(100dvh_-_5.2rem)] items-center justify-center pb-[5.2rem]'>
+          <EmptyState
+            image={<img src='block.png' alt='' />}
+            imageClassName='size-[15.6rem]'
+            highlightTitle='차단한 사용자가 없어요'
+            description='차단한 사용자는 여기서 확인할 수 있어요'
           />
-        ))}
-      </div>
+        </div>
+      )}
       <BottomSheet
         open={Boolean(selectedUserName)}
         ariaLabel='차단 해제 확인'
