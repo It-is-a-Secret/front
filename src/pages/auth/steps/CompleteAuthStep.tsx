@@ -23,7 +23,9 @@ export const CompleteAuthStep = ({onNext, onLater}: CompleteAuthStepProps) => {
           image={<img src='complete.png' alt='' />}
           title='인증 완료!'
           highlightTitle='이제 시작해 볼까요?'
-          description={'프로필을 작성해야 다른 학생과\n채팅을 주고받을 수 있어요'}
+          description={
+            '프로필을 작성해야 다른 학생과\n채팅을 주고받을 수 있어요'
+          }
         />
       </div>
 
@@ -32,7 +34,7 @@ export const CompleteAuthStep = ({onNext, onLater}: CompleteAuthStepProps) => {
           type='button'
           className='text-button1-14b border-primary text-primary w-full rounded-[20px] border bg-transparent p-[1.55rem]'
           onClick={() => setIsLaterSheetOpen(true)}>
-          나중에 하기
+          나중에 하기(둘러보기)
         </button>
         <Button text='지금 프로필 만들기' onClick={onNext} />
       </div>

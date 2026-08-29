@@ -2,6 +2,7 @@ import {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 
 import {MyMenuItem} from '@/pages/my/components/MyMenuItem';
+import {OnboardingUnfinishedCard} from '@/pages/my/components/OnboardingUnfinishedCard';
 import {Profile} from '@/pages/my/components/Profile';
 import {
   MyMenuSheet,
@@ -20,6 +21,7 @@ import {
 
 export const MyPage = () => {
   const navigate = useNavigate();
+  const onboardingCompleted = false;
   const [isChatNotificationOn, setIsChatNotificationOn] = useState(true);
   const [selectedMenuSheet, setSelectedMenuSheet] =
     useState<MyMenuSheetType | null>(null);
@@ -38,6 +40,16 @@ export const MyPage = () => {
           </h1>
         }
       />
+      {!onboardingCompleted && (
+        <div className='mt-[1.6rem]'>
+          <OnboardingUnfinishedCard
+            completedCount={4}
+            totalCount={8}
+            nextStepLabel='MBTI 선택'
+            onContinue={() => navigate('/onboarding')}
+          />
+        </div>
+      )}
       <section className='mt-[1.6rem]'>
         <Profile
           nickname='행복한코딩러'

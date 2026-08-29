@@ -1,7 +1,9 @@
+import {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 
 import {Chip} from '@/pages/onboarding/components/Chip';
 import {ProfileImageCarousel} from '@/pages/profile/components/ProfileImageCarousel';
+import {BottomSheet} from '@/shared/components/BottomSheet';
 import {Button} from '@/shared/components/Button';
 import {Header} from '@/shared/components/Header';
 import {IcSvgEtc, IcSvgLeft} from '@/shared/icons';
@@ -46,6 +48,20 @@ const MOCK_PROFILE = {
 
 export const ProfilePage = () => {
   const navigate = useNavigate();
+  const onboardingCompleted = false;
+  const [isOnboardingSheetOpen, setIsOnboardingSheetOpen] = useState(false);
+
+  const handleCloseOnboardingSheet = () => {
+    setIsOnboardingSheetOpen(false);
+  };
+
+  const handleStartChat = () => {
+    if (onboardingCompleted) {
+      return;
+    }
+
+    setIsOnboardingSheetOpen(true);
+  };
 
   return (
     <section className='min-h-dvh pb-[2rem]'>
@@ -91,8 +107,45 @@ export const ProfilePage = () => {
         <Button
           text='채팅 시작하기'
           description='대화가 진전되면 사진이 한 장씩 공개돼요'
+          onClick={handleStartChat}
         />
       </div>
+
+      {!onboardingCompleted && (
+        <BottomSheet
+          open={isOnboardingSheetOpen}
+          ariaLabel='온보딩 완료 안내'
+          onClose={handleCloseOnboardingSheet}>
+          <div className='flex flex-col items-center px-[1.2rem] pb-[3.6rem] text-center'>
+            <img src='lock.png' alt='' className='size-[9.2rem]' />
+            <h2 className='text-title-18b mb-[0.8rem] whitespace-pre-line text-gray-800'>
+              {'온보딩을 완료해야\n'}
+              <span className='text-primary'>채팅을 시작할 수 있어요</span>
+            </h2>
+            <p className='text-body1-15r mb-[2.8rem] whitespace-pre-line text-gray-600'>
+              {
+                '프로필을 만들어야 다른 사람과 채팅할 수 있어요\n지금은 탐색 기능만 이용 가능해요'
+              }
+            </p>
+            <div className='flex w-full gap-[0.8rem]'>
+              <div className='flex-[1]'>
+                <Button
+                  text='나중에 하기'
+                  className='border-primary text-button1-14b text-primary h-[5.6rem] rounded-[28px] border'
+                  onClick={handleCloseOnboardingSheet}
+                />
+              </div>
+              <div className='flex-[1.8]'>
+                <Button
+                  text='지금 프로필 만들기'
+                  className='bg-primary text-button1-14b text-white-800 h-[5.6rem] rounded-[28px] shadow-[0_8px_10px_0_rgba(194,30,86,0.25)]'
+                  onClick={() => navigate('/onboarding')}
+                />
+              </div>
+            </div>
+          </div>
+        </BottomSheet>
+      )}
     </section>
   );
 };
