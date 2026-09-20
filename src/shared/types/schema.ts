@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/api/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 신고 접수
+         * @description 대상 회원을 신고한다. chatRoomId가 있으면 채팅방 신고, 없으면 프로필 신고. 자기 신고는 400, 대상/방 없음은 404, 동일 대상·방 중복 신고는 409. 채팅방 신고가 고유 신고자 3명에 도달하면 방이 동결(REPORTED)된다.
+         */
+        post: operations["report"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/members/me/school-email/verifications": {
         parameters: {
             query?: never;
@@ -64,7 +84,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/chat/rooms/{roomId}/progress/agree": {
+    "/api/feeds/me/images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 본인 피드 이미지 관리 조회
+         * @description 본인 피드 이미지를 displayOrder 순서로 조회한다. 공개 조회와 달리 PROCESSING/FAILED도 함께 내려 업로드 진행/실패를 보여주며, FAILED가 하나라도 있으면 reuploadRequired=true로 재업로드를 안내한다. 인증 주체에서 본인 피드를 도출하므로 feedId를 받지 않는다.
+         */
+        get: operations["getMyImages"];
+        put?: never;
+        /**
+         * 피드 이미지 메타데이터 저장 (full-replace)
+         * @description 프론트가 원본 S3 업로드를 마친 뒤 피드 이미지 메타데이터를 저장한다. 요청 목록을 피드 사진 전체 집합으로 보는 full-replace 방식이며(기존 DB 행 대체, S3 객체 즉시 삭제 안 함), 원본 key로부터 variant_key를 계산하고 processing_status=PROCESSING으로 시작한다. 인증 주체에서 피드를 도출하므로 feedId를 받지 않는다.
+         */
+        post: operations["saveImages"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/feeds/me/images/presigned-urls": {
         parameters: {
             query?: never;
             header?: never;
@@ -74,10 +118,30 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 단계 동의
-         * @description 다음 사진 공개 단계에 동의한다. 양쪽이 모두 동의하면 방 단계가 한 칸 오른다. 이미 마지막 단계이거나 이미 동의한 단계면 409. 참여자가 아니면 403.
+         * 원본 업로드용 Presigned PUT URL 발급
+         * @description 비공개 originals 버킷에 원본을 직접 PUT할 단기 URL을 사진별로 발급한다. blur_level을 원본 객체 메타데이터(x-amz-meta-blur-level)로 서명에 고정하고, 프론트가 그대로 실어 보낼 requiredHeaders를 함께 내려준다.
          */
-        post: operations["agreeProgress"];
+        post: operations["issuePresignedUrls"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/discovery/feeds/{feedId}/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 피드로 1:1 대화 시작
+         * @description 탐색에서 발견한 상대의 feedId로 대화를 시작한다. 첫 접촉이면 방을 만들고 첫 메시지를 전송한 뒤 200(created=true, firstMessage 포함), 이미 채팅 중(ACTIVE)이면 메시지 없이 기존 방으로 안내한다(200, created=false). 대상 피드 없음 404, 자기 자신 400, 내 피드 미완성 403, 이성 아님·대상 피드 비공개·비활성 409(NOT_ELIGIBLE), 차단 관계 409(BLOCKED), 종료된 관계 409(RELATIONSHIP_CLOSED), 검토 중 409(RELATIONSHIP_UNDER_REVIEW).
+         */
+        post: operations["startChat"];
         delete?: never;
         options?: never;
         head?: never;
@@ -98,6 +162,26 @@ export interface paths {
          * @description 채팅방을 영구히 나간다(재입장 불가). 1:1이므로 방이 즉시 종료(CLOSED)된다. 나간 본인은 즉시 목록에서 사라지고 이력 조회·송신이 모두 막히지만, 남은 상대는 직접 나갈 때까지 목록·이력을 그대로 볼 수 있다(송신만 차단).
          */
         post: operations["leaveRoom"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blocks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 차단 등록
+         * @description 대상 회원을 차단한다. 탐색 후보에서는 양방향 제외되고, 채팅 v1에서는 차단자에게만 목록·이력이 숨겨지며 기존 방 송신은 양쪽 모두 막힌다. 자기 차단은 400, 대상이 없으면 404. 이미 차단했으면 멱등하게 204.
+         */
+        post: operations["block"];
         delete?: never;
         options?: never;
         head?: never;
@@ -176,6 +260,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/keywords": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 키워드 카탈로그 조회
+         * @description 온보딩 선택 화면용. 카테고리(정렬·필수 여부)와 소속 활성 태그 목록을 반환한다.
+         */
+        get: operations["getCatalog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/feeds/{feedId}/images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 공개 피드 이미지 조회
+         * @description 다른 회원이 보는 공개 피드 이미지를 displayOrder 순서로 조회한다. 깨진/처리중 블러본 노출을 막기 위해 모든 이미지가 READY일 때만 노출하며(전부-또는-비노출), 하나라도 PROCESSING/FAILED이거나 이미지가 없으면 404로 비노출한다.
+         */
+        get: operations["getPublicFeedImages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/discovery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 탐색 목록 조회
+         * @description 온보딩 완료한 이성 회원을 가중 점수(키워드·MBTI·년생·학과)순으로 정렬해 page/size 페이지네이션한다. 동점은 최근 7일 접속 우선으로 가른다. 다음 페이지는 page를 1씩 올려 요청한다. 온보딩 미완료자는 403.
+         */
+        get: operations["getDiscovery"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/chat/rooms": {
         parameters: {
             query?: never;
@@ -208,6 +352,26 @@ export interface paths {
          * @description 참여 중인 방의 요약 정보를 반환한다. 참여자가 아니면 403.
          */
         get: operations["getRoom"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/rooms/{roomId}/revealed-images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 단계별 양쪽 사진 조회
+         * @description ACTIVE 상태의 참여 중인 방에서만 200. 방의 현재 진행 단계가 정하는 공개 장수만큼 본인(ME)·상대(PARTNER) 원본이 각각 displayOrder 순서대로 단기 Presigned GET으로 공개되고, 나머지는 블러본으로 내려온다. 각 사진은 role로 소유자를 구분한다. 참여자가 아니면 403, 방이 없거나 내가 나갔으면 404, 방이 차단/신고/종료(비ACTIVE) 상태면 원본을 발급하지 않고 409(ROOM_CLOSED)를 반환한다.
+         */
+        get: operations["getRevealedImages"];
         put?: never;
         post?: never;
         delete?: never;
@@ -276,10 +440,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/blocks/{targetMemberId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * 차단 해제
+         * @description 대상 회원 차단을 해제한다. 차단 상태가 아니어도 멱등하게 204.
+         */
+        delete: operations["unblock"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        ReportRequest: {
+            /** Format: int64 */
+            targetMemberId: number;
+            /** Format: int64 */
+            chatRoomId?: number;
+            /** @enum {string} */
+            reason: "SPAM" | "INAPPROPRIATE_CHAT" | "SEXUAL_HARASSMENT" | "HATE_SPEECH" | "PHOTO_THEFT" | "ETC";
+            detail?: string;
+        };
         VerifySchoolEmailRequest: {
             schoolEmail?: string;
             code?: string;
@@ -291,23 +484,26 @@ export interface components {
             nickName?: string;
             /** Format: int32 */
             birthYear: number;
-            department?: string;
             /** @enum {string} */
-            mbti: "ISTJ" | "ISFJ" | "INFJ" | "INTJ" | "ISTP" | "ISFP" | "INFP" | "INTP" | "ESTP" | "ESFP" | "ENFP" | "ENTP" | "ESTJ" | "ESFJ" | "ENFJ" | "ENTJ";
+            department: "THEOLOGY" | "CHRISTIAN_EDUCATION" | "KOREAN_LANGUAGE" | "ENGLISH" | "RUSSIAN" | "CHINESE" | "EARLY_CHILDHOOD_EDUCATION" | "PERFORMING_ARTS" | "MUSIC" | "DIGITAL_MEDIA_DESIGN" | "COSMETIC_INVENTION_DESIGN" | "BEAUTY_MEDICAL_DESIGN" | "GAME_CONTENT" | "PRACTICAL_MUSIC" | "SPORTS_SCIENCE" | "SPORTS_APPLIED_INDUSTRY" | "GLOBAL_BUSINESS" | "PUBLIC_ADMINISTRATION" | "TOURISM_MANAGEMENT" | "PUBLIC_GOVERNANCE" | "TOURISM" | "FOOD_NUTRITION" | "COMPUTER_ENGINEERING" | "INFORMATION_ELECTRICAL_ELECTRONIC" | "STATISTICS_DATA_SCIENCE" | "SOFTWARE" | "URBAN_INFORMATION_ENGINEERING" | "ENVIRONMENTAL_ENERGY_ENGINEERING" | "AI_CONVERGENCE" | "SMART_CITY_ENGINEERING" | "MARINE_BIO_ENGINEERING" | "CONVERGENCE_SOFTWARE";
+            /** @enum {string} */
+            mbti?: "ISTJ" | "ISFJ" | "INFJ" | "INTJ" | "ISTP" | "ISFP" | "INFP" | "INTP" | "ESTP" | "ESFP" | "ENFP" | "ENTP" | "ESTJ" | "ESFJ" | "ENFJ" | "ENTJ";
             /** @enum {string} */
             gender: "MALE" | "FEMALE";
-            interests?: ("BASKETBALL" | "SOCCER" | "FITNESS" | "RUNNING" | "READING" | "MOVIE" | "MUSIC" | "TRAVEL" | "COOKING" | "GAMING" | "PHOTOGRAPHY" | "CODING" | "COFFEE" | "PET")[];
+            keywordTagIds?: number[];
         };
         DataResponseMemberProfileResponse: {
             /** Format: date-time */
             timestamp?: string;
             data?: components["schemas"]["MemberProfileResponse"];
         };
-        InterestResponse: {
-            /** @enum {string} */
-            name?: "BASKETBALL" | "SOCCER" | "FITNESS" | "RUNNING" | "READING" | "MOVIE" | "MUSIC" | "TRAVEL" | "COOKING" | "GAMING" | "PHOTOGRAPHY" | "CODING" | "COFFEE" | "PET";
-            label?: string;
-            description?: string;
+        MemberKeywordResponse: {
+            categoryCode?: string;
+            categoryName?: string;
+            /** Format: int64 */
+            tagId?: number;
+            tagCode?: string;
+            tagName?: string;
         };
         MemberProfileResponse: {
             /** Format: int64 */
@@ -316,14 +512,60 @@ export interface components {
             schoolEmail?: string;
             /** Format: int32 */
             birthYear?: number;
-            department?: string;
+            /** @enum {string} */
+            department?: "THEOLOGY" | "CHRISTIAN_EDUCATION" | "KOREAN_LANGUAGE" | "ENGLISH" | "RUSSIAN" | "CHINESE" | "EARLY_CHILDHOOD_EDUCATION" | "PERFORMING_ARTS" | "MUSIC" | "DIGITAL_MEDIA_DESIGN" | "COSMETIC_INVENTION_DESIGN" | "BEAUTY_MEDICAL_DESIGN" | "GAME_CONTENT" | "PRACTICAL_MUSIC" | "SPORTS_SCIENCE" | "SPORTS_APPLIED_INDUSTRY" | "GLOBAL_BUSINESS" | "PUBLIC_ADMINISTRATION" | "TOURISM_MANAGEMENT" | "PUBLIC_GOVERNANCE" | "TOURISM" | "FOOD_NUTRITION" | "COMPUTER_ENGINEERING" | "INFORMATION_ELECTRICAL_ELECTRONIC" | "STATISTICS_DATA_SCIENCE" | "SOFTWARE" | "URBAN_INFORMATION_ENGINEERING" | "ENVIRONMENTAL_ENERGY_ENGINEERING" | "AI_CONVERGENCE" | "SMART_CITY_ENGINEERING" | "MARINE_BIO_ENGINEERING" | "CONVERGENCE_SOFTWARE";
             /** @enum {string} */
             mbti?: "ISTJ" | "ISFJ" | "INFJ" | "INTJ" | "ISTP" | "ISFP" | "INFP" | "INTP" | "ESTP" | "ESFP" | "ENFP" | "ENTP" | "ESTJ" | "ESFJ" | "ENFJ" | "ENTJ";
             /** @enum {string} */
             gender?: "MALE" | "FEMALE";
             /** @enum {string} */
             registrationStatus?: "UNVERIFIED" | "VERIFIED" | "COMPLETED";
-            interests?: components["schemas"]["InterestResponse"][];
+            keywords?: components["schemas"]["MemberKeywordResponse"][];
+        };
+        FeedImageSaveRequest: {
+            images?: components["schemas"]["Image"][];
+        };
+        Image: {
+            objectKey?: string;
+            /** Format: int32 */
+            displayOrder: number;
+            /** Format: int32 */
+            blurLevel?: number;
+        };
+        DataResponseFeedImageResponse: {
+            /** Format: date-time */
+            timestamp?: string;
+            data?: components["schemas"]["FeedImageResponse"];
+        };
+        FeedImageResponse: {
+            images?: components["schemas"]["Image"][];
+        };
+        ImageRequest: {
+            fileName?: string;
+            contentType?: string;
+            /** Format: int32 */
+            blurLevel?: number;
+        };
+        PresignedUrlRequest: {
+            images?: components["schemas"]["ImageRequest"][];
+        };
+        DataResponsePresignedUrlResponse: {
+            /** Format: date-time */
+            timestamp?: string;
+            data?: components["schemas"]["PresignedUrlResponse"];
+        };
+        PresignedUrl: {
+            uploadUrl?: string;
+            originalKey?: string;
+            requiredHeaders?: {
+                [key: string]: string;
+            };
+        };
+        PresignedUrlResponse: {
+            images?: components["schemas"]["PresignedUrl"][];
+        };
+        ChatStartRequest: {
+            message?: string;
         };
         ChatMessageResponse: {
             /** Format: int64 */
@@ -338,26 +580,20 @@ export interface components {
             /** Format: date-time */
             createdAt?: string;
         };
-        ChatRoomSummaryResponse: {
+        ChatStartResponse: {
             /** Format: int64 */
             roomId?: number;
-            /** @enum {string} */
-            roomStatus?: "ACTIVE" | "CLOSED" | "BLOCKED" | "REPORTED";
-            /** @enum {string} */
-            progressStatus?: "MATCHED" | "PHOTO_REVEAL_STEP_1" | "PHOTO_REVEAL_STEP_2" | "PHOTO_REVEAL_STEP_3" | "PHOTO_REVEAL_STEP_4" | "COMPLETED";
-            partnerNickname?: string;
-            /** Format: int64 */
-            lastMessageId?: number;
-            lastMessage?: components["schemas"]["ChatMessageResponse"];
-            /** Format: int64 */
-            partnerLastReadMessageId?: number;
-            /** Format: int64 */
-            unreadCount?: number;
+            created?: boolean;
+            firstMessage?: components["schemas"]["ChatMessageResponse"];
         };
-        DataResponseChatRoomSummaryResponse: {
+        DataResponseChatStartResponse: {
             /** Format: date-time */
             timestamp?: string;
-            data?: components["schemas"]["ChatRoomSummaryResponse"];
+            data?: components["schemas"]["ChatStartResponse"];
+        };
+        BlockRequest: {
+            /** Format: int64 */
+            targetMemberId: number;
         };
         AuthTokenResponse: {
             accessToken?: string;
@@ -375,10 +611,96 @@ export interface components {
             timestamp?: string;
             data?: string;
         };
+        DataResponseListKeywordCategoryResponse: {
+            /** Format: date-time */
+            timestamp?: string;
+            data?: components["schemas"]["KeywordCategoryResponse"][];
+        };
+        KeywordCategoryResponse: {
+            /** Format: int64 */
+            id?: number;
+            code?: string;
+            name?: string;
+            /** Format: int32 */
+            sortOrder?: number;
+            required?: boolean;
+            tags?: components["schemas"]["KeywordTagResponse"][];
+        };
+        KeywordTagResponse: {
+            /** Format: int64 */
+            id?: number;
+            code?: string;
+            name?: string;
+        };
+        DataResponsePublicFeedImagesResponse: {
+            /** Format: date-time */
+            timestamp?: string;
+            data?: components["schemas"]["PublicFeedImagesResponse"];
+        };
+        PublicFeedImagesResponse: {
+            images?: components["schemas"]["Image"][];
+        };
+        DataResponseMyFeedImagesResponse: {
+            /** Format: date-time */
+            timestamp?: string;
+            data?: components["schemas"]["MyFeedImagesResponse"];
+        };
+        MyFeedImagesResponse: {
+            reuploadRequired?: boolean;
+            images?: components["schemas"]["Image"][];
+        };
+        DataResponseListDiscoveryCardResponse: {
+            /** Format: date-time */
+            timestamp?: string;
+            data?: components["schemas"]["DiscoveryCardResponse"][];
+        };
+        DiscoveryCardResponse: {
+            /** Format: int64 */
+            feedId?: number;
+            nickName?: string;
+            /** Format: int32 */
+            birthYear?: number;
+            /** @enum {string} */
+            department?: "THEOLOGY" | "CHRISTIAN_EDUCATION" | "KOREAN_LANGUAGE" | "ENGLISH" | "RUSSIAN" | "CHINESE" | "EARLY_CHILDHOOD_EDUCATION" | "PERFORMING_ARTS" | "MUSIC" | "DIGITAL_MEDIA_DESIGN" | "COSMETIC_INVENTION_DESIGN" | "BEAUTY_MEDICAL_DESIGN" | "GAME_CONTENT" | "PRACTICAL_MUSIC" | "SPORTS_SCIENCE" | "SPORTS_APPLIED_INDUSTRY" | "GLOBAL_BUSINESS" | "PUBLIC_ADMINISTRATION" | "TOURISM_MANAGEMENT" | "PUBLIC_GOVERNANCE" | "TOURISM" | "FOOD_NUTRITION" | "COMPUTER_ENGINEERING" | "INFORMATION_ELECTRICAL_ELECTRONIC" | "STATISTICS_DATA_SCIENCE" | "SOFTWARE" | "URBAN_INFORMATION_ENGINEERING" | "ENVIRONMENTAL_ENERGY_ENGINEERING" | "AI_CONVERGENCE" | "SMART_CITY_ENGINEERING" | "MARINE_BIO_ENGINEERING" | "CONVERGENCE_SOFTWARE";
+            departmentLabel?: string;
+            /** @enum {string} */
+            mbti?: "ISTJ" | "ISFJ" | "INFJ" | "INTJ" | "ISTP" | "ISFP" | "INFP" | "INTP" | "ESTP" | "ESFP" | "ENFP" | "ENTP" | "ESTJ" | "ESFJ" | "ENFJ" | "ENTJ";
+            /** @enum {string} */
+            gender?: "MALE" | "FEMALE";
+        };
+        ChatRoomSummaryResponse: {
+            /** Format: int64 */
+            roomId?: number;
+            /** @enum {string} */
+            roomStatus?: "ACTIVE" | "CLOSED" | "BLOCKED" | "REPORTED";
+            /** @enum {string} */
+            progressStatus?: "MATCHED" | "PHOTO_REVEAL_STEP_1" | "PHOTO_REVEAL_STEP_2" | "PHOTO_REVEAL_STEP_3" | "PHOTO_REVEAL_STEP_4" | "COMPLETED";
+            partnerNickname?: string;
+            /** Format: int64 */
+            lastMessageId?: number;
+            lastMessage?: components["schemas"]["ChatMessageResponse"];
+            /** Format: int64 */
+            partnerLastReadMessageId?: number;
+            /** Format: int64 */
+            unreadCount?: number;
+        };
         DataResponseListChatRoomSummaryResponse: {
             /** Format: date-time */
             timestamp?: string;
             data?: components["schemas"]["ChatRoomSummaryResponse"][];
+        };
+        DataResponseChatRoomSummaryResponse: {
+            /** Format: date-time */
+            timestamp?: string;
+            data?: components["schemas"]["ChatRoomSummaryResponse"];
+        };
+        DataResponseRevealedFeedImagesResponse: {
+            /** Format: date-time */
+            timestamp?: string;
+            data?: components["schemas"]["RevealedFeedImagesResponse"];
+        };
+        RevealedFeedImagesResponse: {
+            images?: components["schemas"]["Image"][];
         };
         DataResponseListChatMessageResponse: {
             /** Format: date-time */
@@ -394,6 +716,28 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    report: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     verifySchoolEmail: {
         parameters: {
             query?: never;
@@ -462,7 +806,101 @@ export interface operations {
             };
         };
     };
-    agreeProgress: {
+    getMyImages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DataResponseMyFeedImagesResponse"];
+                };
+            };
+        };
+    };
+    saveImages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedImageSaveRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DataResponseFeedImageResponse"];
+                };
+            };
+        };
+    };
+    issuePresignedUrls: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresignedUrlRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DataResponsePresignedUrlResponse"];
+                };
+            };
+        };
+    };
+    startChat: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                feedId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatStartRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DataResponseChatStartResponse"];
+                };
+            };
+        };
+    };
+    leaveRoom: {
         parameters: {
             query?: never;
             header?: never;
@@ -478,22 +916,22 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "*/*": components["schemas"]["DataResponseChatRoomSummaryResponse"];
-                };
+                content?: never;
             };
         };
     };
-    leaveRoom: {
+    block: {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                roomId: number;
-            };
+            path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlockRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -586,6 +1024,73 @@ export interface operations {
             };
         };
     };
+    getCatalog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DataResponseListKeywordCategoryResponse"];
+                };
+            };
+        };
+    };
+    getPublicFeedImages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                feedId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DataResponsePublicFeedImagesResponse"];
+                };
+            };
+        };
+    };
+    getDiscovery: {
+        parameters: {
+            query?: {
+                /** @description 0부터 시작하는 페이지 번호(음수는 0으로 보정) */
+                page?: number;
+                /** @description 페이지 크기(1~50으로 보정됨) */
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DataResponseListDiscoveryCardResponse"];
+                };
+            };
+        };
+    };
     getMyRooms: {
         parameters: {
             query?: never;
@@ -628,6 +1133,28 @@ export interface operations {
             };
         };
     };
+    getRevealedImages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roomId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DataResponseRevealedFeedImagesResponse"];
+                };
+            };
+        };
+    };
     getMessages: {
         parameters: {
             query?: {
@@ -659,6 +1186,7 @@ export interface operations {
         parameters: {
             query: {
                 code: string;
+                redirect_uri?: string;
             };
             header?: never;
             path?: never;
@@ -679,9 +1207,31 @@ export interface operations {
     };
     kakaoAuthorize: {
         parameters: {
-            query?: never;
+            query?: {
+                redirect_uri?: string;
+            };
             header?: never;
             path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    unblock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                targetMemberId: number;
+            };
             cookie?: never;
         };
         requestBody?: never;

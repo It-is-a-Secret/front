@@ -1,11 +1,9 @@
 import {useState} from 'react';
+import {useMutation} from '@tanstack/react-query';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 
-import {
-  AUTH_EMAIL_DOMAIN,
-  AUTH_MOCK,
-  AUTH_STEP_PROGRESS,
-} from '@/pages/auth/mocks/mock';
+import {AUTH_MUTATION_OPTIONS} from '@/pages/auth/api/query';
+import {AUTH_EMAIL_DOMAIN, AUTH_STEP_PROGRESS} from '@/pages/auth/mocks/mock';
 import type {AuthStep} from '@/pages/auth/mocks/mock';
 import {CodeAuthStep} from '@/pages/auth/steps/CodeAuthStep';
 import {CompleteAuthStep} from '@/pages/auth/steps/CompleteAuthStep';
@@ -25,17 +23,23 @@ export const AuthPage = () => {
   const [emailId, setEmailId] = useState('');
   const [code, setCode] = useState('');
 
-  const email = `${emailId || AUTH_MOCK.emailId}${AUTH_EMAIL_DOMAIN}`;
+  const email = `${emailId.trim()}${AUTH_EMAIL_DOMAIN}`;
+  const sendEmailCodeMutation = useMutation(
+    AUTH_MUTATION_OPTIONS.SEND_SCHOOL_EMAIL_CODE()
+  );
+  const verifyEmailCodeMutation = useMutation(
+    AUTH_MUTATION_OPTIONS.VERIFY_SCHOOL_EMAIL()
+  );
 
   const handleKakaoLogin = () => {
     const kakaoAuthorizeUrl = new URL(
       API_ENDPOINT.auth.kakaoAuthorize,
-      import.meta.env.VITE_BASE_URL,
+      import.meta.env.VITE_BASE_URL
     );
 
     const redirectUri = new URL(
       '/auth/callback',
-      window.location.origin,
+      window.location.origin
     ).toString();
 
     sessionStorage.setItem('kakaoRedirectUri', redirectUri);
@@ -46,12 +50,33 @@ export const AuthPage = () => {
 
   const handleBackToEmail = () => {
     setCode('');
+    sendEmailCodeMutation.reset();
+    verifyEmailCodeMutation.reset();
     setStep('email');
+  };
+
+  const handleSendEmailCode = () => {
+    sendEmailCodeMutation.mutate(
+      {schoolEmail: email},
+      {
+        onSuccess: () => {
+          setCode('');
+          setStep('code');
+        },
+      }
+    );
   };
 
   const handleMoveComplete = () => {
     setStep('complete');
     navigate('/auth?step=complete', {replace: true});
+  };
+
+  const handleVerifyEmailCode = () => {
+    verifyEmailCodeMutation.mutate(
+      {schoolEmail: email, code},
+      {onSuccess: handleMoveComplete}
+    );
   };
 
   const handleBack = () => {
@@ -71,9 +96,22 @@ export const AuthPage = () => {
         <CodeAuthStep
           email={email}
           code={code}
-          onCodeChange={setCode}
-          onConfirm={handleMoveComplete}
-          onResend={() => setCode('')}
+          errorMessage={
+            verifyEmailCodeMutation.error?.message ??
+            sendEmailCodeMutation.error?.message
+          }
+          isPending={
+            verifyEmailCodeMutation.isPending || sendEmailCodeMutation.isPending
+          }
+          onCodeChange={(nextCode) => {
+            verifyEmailCodeMutation.reset();
+            setCode(nextCode);
+          }}
+          onConfirm={handleVerifyEmailCode}
+          onResend={() => {
+            verifyEmailCodeMutation.reset();
+            handleSendEmailCode();
+          }}
         />
       );
     }
@@ -81,8 +119,13 @@ export const AuthPage = () => {
     return (
       <EmailAuthStep
         emailId={emailId}
-        onEmailIdChange={setEmailId}
-        onSubmit={() => setStep('code')}
+        errorMessage={sendEmailCodeMutation.error?.message}
+        isPending={sendEmailCodeMutation.isPending}
+        onEmailIdChange={(nextEmailId) => {
+          sendEmailCodeMutation.reset();
+          setEmailId(nextEmailId);
+        }}
+        onSubmit={handleSendEmailCode}
       />
     );
   };

@@ -18,11 +18,11 @@ export type GetChatMessagesQuery =
 export type GetChatMessagesResponse =
   paths['/api/chat/rooms/{roomId}/messages']['get']['responses'][200]['content']['*/*'];
 
-export type AgreeProgressPathParams =
-  paths['/api/chat/rooms/{roomId}/progress/agree']['post']['parameters']['path'];
+export type GetRevealedImagesPathParams =
+  paths['/api/chat/rooms/{roomId}/revealed-images']['get']['parameters']['path'];
 
-export type AgreeProgressResponse =
-  paths['/api/chat/rooms/{roomId}/progress/agree']['post']['responses'][200]['content']['*/*'];
+export type GetRevealedImagesResponse =
+  paths['/api/chat/rooms/{roomId}/revealed-images']['get']['responses'][200]['content']['*/*'];
 
 export type LeaveChatRoomPathParams =
   paths['/api/chat/rooms/{roomId}/leave']['post']['parameters']['path'];
