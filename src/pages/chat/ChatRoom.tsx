@@ -2,8 +2,10 @@ import {useEffect, useRef, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 
 import {ChatInputBox} from '@/pages/chat/components/ChatInputBox';
+import {ChatImageList} from '@/pages/chat/components/ChatImageList';
 import {ChatReportSheet} from '@/pages/chat/components/ChatReportSheet';
 import {ChatRoomActionMenu} from '@/pages/chat/components/ChatRoomActionMenu';
+import {PhotoRevealEvent} from '@/pages/chat/components/PhotoRevealEvent';
 import {ChatMessageListSection} from '@/pages/chat/section/ChatMessageListSection';
 import {ToastMessage} from '@/pages/my/components/ToastMessage';
 import {BottomSheet} from '@/shared/components/BottomSheet';
@@ -15,12 +17,23 @@ import {IcSvgEtc, IcSvgLeft} from '@/shared/icons';
 const MOCK_CHAT_ROOM = {
   nickname: '행복한코딩러',
   publicPhotoCount: 2,
+  photos: [
+    {objectKey: '/profileLogo.png', displayOrder: 1, blurLevel: 0},
+    {objectKey: '/complete.png', displayOrder: 2, blurLevel: 0},
+    {objectKey: '/noPeople.png', displayOrder: 3, blurLevel: 50},
+    {objectKey: '/completeOnboarding.png', displayOrder: 4, blurLevel: 50},
+    {objectKey: '/report.png', displayOrder: 5, blurLevel: 50},
+  ],
 };
 
 export const ChatRoom = () => {
   const navigate = useNavigate();
   const actionMenuRef = useRef<HTMLDivElement>(null);
+  const previewPhoto = MOCK_CHAT_ROOM.photos.find(
+    (photo) => photo.displayOrder === MOCK_CHAT_ROOM.publicPhotoCount,
+  );
   const [message, setMessage] = useState('');
+  const [isRevealPreviewOpen, setIsRevealPreviewOpen] = useState(false);
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
   const [isReportSheetOpen, setIsReportSheetOpen] = useState(false);
   const [isBlockSheetOpen, setIsBlockSheetOpen] = useState(false);
@@ -98,6 +111,15 @@ export const ChatRoom = () => {
           rightItem={<IcSvgEtc className='size-[3.2rem] text-gray-800' />}
           onClickRight={() => setIsActionMenuOpen((prev) => !prev)}
         />
+        <ChatImageList photos={MOCK_CHAT_ROOM.photos} />
+        <div className='flex justify-end px-[2rem] pt-[0.8rem]'>
+          <button
+            type='button'
+            onClick={() => setIsRevealPreviewOpen(true)}
+            className='border-primary text-caption2-12sb text-primary rounded-full border px-[1.2rem] py-[0.5rem]'>
+            이벤트 미리보기
+          </button>
+        </div>
         {isActionMenuOpen && (
           <ChatRoomActionMenu
             onReport={handleOpenReportSheet}
@@ -143,6 +165,15 @@ export const ChatRoom = () => {
         open={isReportSheetOpen}
         onClose={() => setIsReportSheetOpen(false)}
       />
+      {isRevealPreviewOpen && previewPhoto && (
+        <PhotoRevealEvent
+          photoUrl={previewPhoto.objectKey}
+          displayOrder={previewPhoto.displayOrder}
+          totalCount={MOCK_CHAT_ROOM.photos.length}
+          partnerNickname={MOCK_CHAT_ROOM.nickname}
+          onClose={() => setIsRevealPreviewOpen(false)}
+        />
+      )}
       <BottomSheet
         open={isBlockSheetOpen}
         ariaLabel='사용자 차단 확인'

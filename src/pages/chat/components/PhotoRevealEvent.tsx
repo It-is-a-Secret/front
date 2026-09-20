@@ -1,0 +1,81 @@
+import {useEffect, useRef} from 'react';
+
+interface PhotoRevealEventProps {
+  photoUrl: string;
+  displayOrder: number;
+  totalCount: number;
+  partnerNickname: string;
+  onClose: () => void;
+}
+
+const KOREAN_ORDINALS = ['첫', '두', '세', '네', '다섯'];
+
+const getOrdinal = (displayOrder: number) =>
+  KOREAN_ORDINALS[displayOrder - 1] ?? `${displayOrder}`;
+
+export const PhotoRevealEvent = ({
+  photoUrl,
+  displayOrder,
+  totalCount,
+  partnerNickname,
+  onClose,
+}: PhotoRevealEventProps) => {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const ordinal = getOrdinal(displayOrder);
+
+  useEffect(() => {
+    dialogRef.current?.showModal();
+  }, []);
+
+  return (
+    <dialog
+      ref={dialogRef}
+      aria-labelledby='photo-reveal-title'
+      className='bg-primary-200 fixed inset-0 m-auto h-dvh max-h-none w-full max-w-[430px] p-0 backdrop:bg-black/60'
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
+      onClose={onClose}>
+      <div className='relative flex size-full flex-col items-center overflow-hidden px-[2.4rem] pt-[6rem] pb-[2.4rem] text-center'>
+        <header className='relative z-10 flex shrink-0 flex-col items-center'>
+          <span className='bg-primary text-body4-16m text-white-800 rounded-full px-[1.6rem] py-[0.8rem]'>
+            REVEAL EVENT
+          </span>
+          <h1
+            id='photo-reveal-title'
+            className='mt-[2.4rem] text-[2.8rem] leading-[1.35] font-bold text-gray-800'>
+            <span className='text-primary'>{ordinal} 번째 사진</span>이
+            <br />
+            공개되었어요!
+          </h1>
+        </header>
+
+        <div className='relative z-10 mt-[2rem] h-[clamp(28rem,46dvh,40rem)] w-full max-w-[26.0rem] shrink rounded-[30px] shadow-[0_0_12px_2px_rgba(255,146,183,0.55)]'>
+          <img
+            src={photoUrl}
+            alt={`${partnerNickname}님의 ${displayOrder}번째 공개 사진`}
+            className='size-full rounded-[30px] object-cover'
+          />
+          <span className='bg-primary text-caption1-12r text-white-800 absolute top-[2rem] left-[2rem] rounded-full px-[0.8rem] py-[0.4rem]'>
+            {displayOrder}/{totalCount}
+          </span>
+        </div>
+
+        <p className='text-body1-15r relative z-10 mt-[1rem] shrink-0 text-gray-600'>
+          서로의 {ordinal} 번째 사진이 공개됐어요
+          <br />
+          {partnerNickname}님의 사진을 확인해 보세요
+        </p>
+
+        <button
+          type='button'
+          autoFocus
+          onClick={onClose}
+          className='bg-primary text-button1-14b text-white-800 relative z-10 mt-auto h-[5.6rem] w-full shrink-0 rounded-full shadow-[0_8px_10px_0_rgba(194,30,86,0.25)]'>
+          대화로 돌아가기
+        </button>
+      </div>
+    </dialog>
+  );
+};
