@@ -12,7 +12,7 @@ export interface PhotoSlot {
   previewUrl: string | null;
 }
 
-const createInitialPhotoSlots = (
+export const createInitialPhotoSlots = (
   initialPreviewUrls: readonly string[] = []
 ): PhotoSlot[] =>
   Array.from({length: PHOTO_SLOT_COUNT}, (_, index) => ({
@@ -29,7 +29,9 @@ export const usePhotoUploadSlots = (
   );
   const previewUrlsRef = useRef<Set<string>>(new Set());
 
-  const uploadedPhotoCount = photoSlots.filter((slot) => slot.previewUrl).length;
+  const uploadedPhotoCount = photoSlots.filter(
+    (slot) => slot.previewUrl
+  ).length;
 
   useEffect(() => {
     const previewUrls = previewUrlsRef.current;

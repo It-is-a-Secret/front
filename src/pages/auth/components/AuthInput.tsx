@@ -11,6 +11,7 @@ interface VerificationCodeInputProps {
   onChange: (value: string) => void;
   length?: number;
   disabled?: boolean;
+  isError?: boolean;
 }
 
 const VerificationCodeInput = ({
@@ -18,6 +19,7 @@ const VerificationCodeInput = ({
   onChange,
   length = DEFAULT_CODE_LENGTH,
   disabled = false,
+  isError = false,
 }: VerificationCodeInputProps) => {
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const code = value.padEnd(length).slice(0, length).split('');
@@ -70,7 +72,12 @@ const VerificationCodeInput = ({
           maxLength={1}
           inputMode='numeric'
           disabled={disabled}
-          className='text-bold-24 bg-white-800 focus:border-primary h-[5.2rem] w-[4.5rem] rounded-[1.8rem] border border-gray-200 text-center text-gray-800 outline-none disabled:cursor-not-allowed'
+          aria-invalid={isError}
+          className={`text-bold-24 bg-white-800 h-[5.2rem] w-[4.5rem] rounded-[1.8rem] border text-center text-gray-800 outline-none disabled:cursor-not-allowed ${
+            isError
+              ? 'border-error focus:border-error'
+              : 'focus:border-primary border-gray-200'
+          }`}
         />
       ))}
     </div>
@@ -84,6 +91,7 @@ interface AuthInputProps {
   attemptCount: number;
   maxAttemptCount: number;
   disabled?: boolean;
+  isError?: boolean;
   onExpire?: () => void;
 }
 
@@ -94,6 +102,7 @@ export const AuthInput = ({
   attemptCount,
   maxAttemptCount,
   disabled = false,
+  isError = false,
   onExpire,
 }: AuthInputProps) => {
   const {formattedTime, isExpired} = useCountdown({
@@ -108,6 +117,7 @@ export const AuthInput = ({
         value={value}
         onChange={onChange}
         disabled={disabled || isExpired}
+        isError={isError}
       />
 
       <p className='text-regular-14 mt-[1.6rem] text-center text-gray-600'>

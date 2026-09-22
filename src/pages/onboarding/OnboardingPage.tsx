@@ -1,4 +1,6 @@
-import {useState} from 'react';
+import {useEffect, useRef} from 'react';
+
+import {useQuery} from '@tanstack/react-query';
 import {useNavigate} from 'react-router-dom';
 
 import {
@@ -6,16 +8,8 @@ import {
   ONBOARDING_STEP_PROGRESS,
   ONBOARDING_STEPS,
 } from '@/pages/onboarding/constants/constants';
-import type {
-  BlurStrength,
-  GenderType,
-  InterestItem,
-  InterestStep,
-  MbtiType,
-  OnboardingStep,
-  SelectedInterests,
-} from '@/pages/onboarding/constants/constants';
-import {MAX_INTEREST_COUNT} from '@/pages/onboarding/constants/constants';
+import type {InterestStep} from '@/pages/onboarding/constants/constants';
+import {useOnboardingDraft} from '@/pages/onboarding/hooks/useOnboardingDraft';
 import {BirthYearStep} from '@/pages/onboarding/steps/BirthYearStep';
 import {BlurStrengthStep} from '@/pages/onboarding/steps/BlurStrengthStep';
 import {CompleteOnboardingStep} from '@/pages/onboarding/steps/CompleteOnboardingStep';
@@ -32,27 +26,80 @@ import {PersonalityConversationStep} from '@/pages/onboarding/steps/PersonalityC
 import {PetStep} from '@/pages/onboarding/steps/PetStep';
 import {PhotoUploadStep} from '@/pages/onboarding/steps/PhotoUploadStep';
 import {ValueInterestStep} from '@/pages/onboarding/steps/ValueInterestStep';
+import {ToastMessage} from '@/pages/my/components/ToastMessage';
+import {MY_QUERY_OPTIONS} from '@/pages/my/api/query';
 import {Button} from '@/shared/components/Button';
 import {Header} from '@/shared/components/Header';
+import {useToast} from '@/shared/hooks/useToast';
 import {IcSvgLeft} from '@/shared/icons';
 
 export const OnboardingPage = () => {
   const navigate = useNavigate();
-  const [step, setStep] = useState<OnboardingStep>('nickname');
-  const [nickname, setNickname] = useState('');
-  const [selectedGender, setSelectedGender] = useState<GenderType | null>(null);
-  const [department, setDepartment] = useState('');
-  const [selectedMbti, setSelectedMbti] = useState<MbtiType | null>(null);
-  const [blurStrength, setBlurStrength] = useState<BlurStrength>(70);
-  const [selectedInterests, setSelectedInterests] =
-    useState<SelectedInterests>({});
+  const profileQuery = useQuery({
+    ...MY_QUERY_OPTIONS.PROFILE(),
+    refetchOnMount: 'always',
+  });
+  const memberId =
+    profileQuery.isFetchedAfterMount && !profileQuery.isError
+      ? profileQuery.data?.data?.id
+      : undefined;
+  const {
+    draft,
+    isReady,
+    restoreError,
+    saveError,
+    photoRestoreError,
+    retryRestore,
+    updateDraft,
+    toggleInterest,
+    changePhoto,
+    removePhoto,
+    sortPhotos,
+  } = useOnboardingDraft(memberId);
+  const lastShownToastMessageRef = useRef<string | null>(null);
+  const {
+    isVisible: isToastVisible,
+    isLeaving: isToastLeaving,
+    showToast,
+    fadeDuration,
+  } = useToast({visibleDuration: 3000, fadeDuration: 300});
+  const errorToastMessage = photoRestoreError
+    ? '사진을 복원하지 못했어요. 사진 단계에서 다시 선택해 주세요.'
+    : saveError
+      ? '진행 내용을 저장하지 못했어요. 다시 시도해 주세요.'
+      : null;
+
+  useEffect(() => {
+    if (!isReady || !errorToastMessage) {
+      lastShownToastMessageRef.current = null;
+      return;
+    }
+
+    if (lastShownToastMessageRef.current !== errorToastMessage) {
+      lastShownToastMessageRef.current = errorToastMessage;
+      showToast();
+    }
+  }, [isReady, errorToastMessage, showToast]);
+
+  const {
+    step,
+    nickname,
+    selectedGender,
+    birthYear,
+    department,
+    selectedMbti,
+    selectedInterests,
+    blurStrength,
+    photoSlots,
+  } = draft;
 
   const currentStepIndex = ONBOARDING_STEPS.indexOf(step);
   const isInterestStep = INTEREST_STEPS.includes(step as InterestStep);
   const interestStep = step as InterestStep;
   const interestStepIndex = INTEREST_STEPS.indexOf(interestStep);
-  const currentInterestCount =
-    isInterestStep ? (selectedInterests[interestStep]?.length ?? 0) : 0;
+  const currentInterestCount = isInterestStep
+    ? (selectedInterests[interestStep]?.length ?? 0)
+    : 0;
   const isNextDisabled =
     (step === 'nickname' && nickname.length === 0) ||
     (step === 'gender' && !selectedGender) ||
@@ -67,7 +114,7 @@ export const OnboardingPage = () => {
     const nextStep = ONBOARDING_STEPS[nextIndex];
 
     if (nextStep) {
-      setStep(nextStep);
+      updateDraft('step', nextStep);
     }
   };
 
@@ -84,75 +131,55 @@ export const OnboardingPage = () => {
     moveStep(currentStepIndex + 1);
   };
 
-  const handleToggleInterest = (interestStep: InterestStep, item: InterestItem) => {
-    setSelectedInterests((prevSelectedInterests) => {
-      const currentItems = prevSelectedInterests[interestStep] ?? [];
-      const isSelected = currentItems.includes(item);
-
-      if (isSelected) {
-        return {
-          ...prevSelectedInterests,
-          [interestStep]: currentItems.filter(
-            (selectedItem) => selectedItem !== item
-          ),
-        };
-      }
-
-      if (currentItems.length >= MAX_INTEREST_COUNT) {
-        return prevSelectedInterests;
-      }
-
-      return {
-        ...prevSelectedInterests,
-        [interestStep]: [...currentItems, item],
-      };
-    });
-  };
-
   const renderStepContent = () => {
     switch (step) {
       case 'gender':
         return (
           <GenderStep
             selectedGender={selectedGender}
-            onGenderChange={setSelectedGender}
+            onGenderChange={(gender) => updateDraft('selectedGender', gender)}
           />
         );
       case 'birthYear':
-        return <BirthYearStep />;
+        return (
+          <BirthYearStep
+            birthYear={birthYear}
+            onBirthYearChange={(year) => updateDraft('birthYear', year)}
+          />
+        );
       case 'department':
         return (
           <DepartmentStep
             department={department}
-            onDepartmentChange={setDepartment}
+            onDepartmentChange={(value) => updateDraft('department', value)}
           />
         );
       case 'mbti':
         return (
           <MbtiStep
             selectedMbti={selectedMbti}
-            onMbtiChange={setSelectedMbti}
+            onMbtiChange={(mbti) => updateDraft('selectedMbti', mbti)}
           />
         );
       case 'hobby':
         return (
           <HobbyStep
             selectedItems={selectedInterests.hobby ?? []}
-            onToggleInterest={(item) => handleToggleInterest('hobby', item)}
+            onToggleInterest={(item) => toggleInterest('hobby', item)}
           />
         );
       case 'foodStyle':
         return (
           <FoodStyleStep
             selectedItems={selectedInterests.foodStyle ?? []}
-            onToggleInterest={(item) => handleToggleInterest('foodStyle', item)}
+            onToggleInterest={(item) => toggleInterest('foodStyle', item)}
           />
         );
       case 'lifeStyle':
         return (
           <LifeStyleStep
             selectedItems={selectedInterests.lifeStyle ?? []}
-            onToggleInterest={(item) => handleToggleInterest('lifeStyle', item)}
+            onToggleInterest={(item) => toggleInterest('lifeStyle', item)}
           />
         );
       case 'personalityConversation':
@@ -160,7 +187,7 @@ export const OnboardingPage = () => {
           <PersonalityConversationStep
             selectedItems={selectedInterests.personalityConversation ?? []}
             onToggleInterest={(item) =>
-              handleToggleInterest('personalityConversation', item)
+              toggleInterest('personalityConversation', item)
             }
           />
         );
@@ -168,7 +195,7 @@ export const OnboardingPage = () => {
         return (
           <DateStyleStep
             selectedItems={selectedInterests.dateStyle ?? []}
-            onToggleInterest={(item) => handleToggleInterest('dateStyle', item)}
+            onToggleInterest={(item) => toggleInterest('dateStyle', item)}
           />
         );
       case 'contactRelationship':
@@ -176,7 +203,7 @@ export const OnboardingPage = () => {
           <ContactRelationshipStep
             selectedItems={selectedInterests.contactRelationship ?? []}
             onToggleInterest={(item) =>
-              handleToggleInterest('contactRelationship', item)
+              toggleInterest('contactRelationship', item)
             }
           />
         );
@@ -184,27 +211,34 @@ export const OnboardingPage = () => {
         return (
           <PetStep
             selectedItems={selectedInterests.pet ?? []}
-            onToggleInterest={(item) => handleToggleInterest('pet', item)}
+            onToggleInterest={(item) => toggleInterest('pet', item)}
           />
         );
       case 'valueInterest':
         return (
           <ValueInterestStep
             selectedItems={selectedInterests.valueInterest ?? []}
-            onToggleInterest={(item) =>
-              handleToggleInterest('valueInterest', item)
-            }
+            onToggleInterest={(item) => toggleInterest('valueInterest', item)}
           />
         );
       case 'blurStrength':
         return (
           <BlurStrengthStep
             blurStrength={blurStrength}
-            onBlurStrengthChange={setBlurStrength}
+            onBlurStrengthChange={(strength) =>
+              updateDraft('blurStrength', strength)
+            }
           />
         );
       case 'photoUpload':
-        return <PhotoUploadStep />;
+        return (
+          <PhotoUploadStep
+            photoSlots={photoSlots}
+            onPhotoChange={changePhoto}
+            onPhotoRemove={removePhoto}
+            onPhotoSort={sortPhotos}
+          />
+        );
       case 'complete':
         return <CompleteOnboardingStep onStart={() => navigate('/home')} />;
       case 'nickname':
@@ -212,14 +246,55 @@ export const OnboardingPage = () => {
         return (
           <NicknameStep
             nickname={nickname}
-            onNicknameChange={setNickname}
+            onNicknameChange={(value) => updateDraft('nickname', value)}
           />
         );
     }
   };
 
+  if (profileQuery.isError || (profileQuery.isFetchedAfterMount && !memberId)) {
+    return (
+      <section className='flex min-h-dvh flex-col items-center justify-center gap-[1.6rem] px-[2rem]'>
+        <p role='alert' className='text-body1-15r text-gray-800'>
+          회원 정보를 불러오지 못했어요.
+        </p>
+        <Button text='다시 시도' onClick={() => void profileQuery.refetch()} />
+      </section>
+    );
+  }
+
+  if (restoreError) {
+    return (
+      <section className='flex min-h-dvh flex-col items-center justify-center gap-[1.6rem] px-[2rem]'>
+        <p role='alert' className='text-body1-15r text-gray-800'>
+          진행 내용을 불러오지 못했어요.
+        </p>
+        <Button text='다시 시도' onClick={retryRestore} />
+      </section>
+    );
+  }
+
+  if (!isReady) {
+    return <section className='min-h-dvh' aria-label='온보딩 불러오는 중' />;
+  }
+
+  const errorToast = isToastVisible && errorToastMessage && (
+    <div
+      className={`fixed right-[2rem] bottom-[8.2rem] left-[2rem] z-[60] mx-auto max-w-[35rem] transition-opacity ${
+        isToastLeaving ? 'opacity-0' : 'opacity-100'
+      }`}
+      style={{transitionDuration: `${fadeDuration}ms`}}>
+      <ToastMessage message={errorToastMessage} />
+    </div>
+  );
+
   if (step === 'complete') {
-    return renderStepContent();
+    return (
+      <>
+        {renderStepContent()}
+        {errorToast}
+      </>
+    );
   }
 
   return (
@@ -248,6 +323,8 @@ export const OnboardingPage = () => {
           />
         </div>
       </div>
+
+      {errorToast}
     </section>
   );
 };

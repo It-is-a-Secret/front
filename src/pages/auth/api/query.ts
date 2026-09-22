@@ -34,8 +34,12 @@ const verifySchoolEmail = async (body: VerifySchoolEmailRequest) => {
   } catch (error) {
     if (isHTTPError(error)) {
       const data = error.data as {message?: string} | undefined;
+      const message =
+        error.response.status === 400
+          ? '인증번호가 일치하지 않아요'
+          : data?.message || '인증 코드 확인에 실패했습니다.';
 
-      throw new Error(data?.message || '인증 코드 확인에 실패했습니다.', {
+      throw new Error(message, {
         cause: error,
       });
     }

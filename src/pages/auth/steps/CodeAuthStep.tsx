@@ -37,6 +37,7 @@ export const CodeAuthStep = ({
           attemptCount={AUTH_MOCK.attemptCount}
           maxAttemptCount={AUTH_MOCK.maxAttemptCount}
           disabled={isPending}
+          isError={Boolean(errorMessage)}
         />
         {errorMessage && (
           <FieldErrorMessage

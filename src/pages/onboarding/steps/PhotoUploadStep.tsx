@@ -1,19 +1,26 @@
 import {DragDropProvider} from '@dnd-kit/react';
+import type {DragEndEvent} from '@dnd-kit/react';
 
 import {PhotoUploadSlot} from '../components/PhotoUploadSlot';
-import {
-  PHOTO_SLOT_COUNT,
-  usePhotoUploadSlots,
-} from '../hooks/usePhotoUploadSlots';
+import {PHOTO_SLOT_COUNT} from '../hooks/usePhotoUploadSlots';
+import type {PhotoSlot} from '../hooks/usePhotoUploadSlots';
 
-export const PhotoUploadStep = () => {
-  const {
-    photoSlots,
-    uploadedPhotoCount,
-    handlePhotoChange,
-    handlePhotoRemove,
-    handlePhotoSort,
-  } = usePhotoUploadSlots();
+interface PhotoUploadStepProps {
+  photoSlots: PhotoSlot[];
+  onPhotoChange: (id: string, file: File) => void;
+  onPhotoRemove: (id: string) => void;
+  onPhotoSort: (event: DragEndEvent) => void;
+}
+
+export const PhotoUploadStep = ({
+  photoSlots,
+  onPhotoChange,
+  onPhotoRemove,
+  onPhotoSort,
+}: PhotoUploadStepProps) => {
+  const uploadedPhotoCount = photoSlots.filter(
+    (slot) => slot.previewUrl
+  ).length;
 
   return (
     <div className='mt-[3rem] flex flex-col gap-[2.4rem]'>
@@ -32,7 +39,7 @@ export const PhotoUploadStep = () => {
         </p>
       </div>
 
-      <DragDropProvider onDragEnd={handlePhotoSort}>
+      <DragDropProvider onDragEnd={onPhotoSort}>
         <div className='flex w-full flex-wrap justify-center gap-[1rem]'>
           {photoSlots.map((slot, index) => (
             <PhotoUploadSlot
@@ -40,8 +47,8 @@ export const PhotoUploadStep = () => {
               slot={slot}
               index={index}
               className='basis-[calc((100%_-_2rem)/3)]'
-              onPhotoChange={handlePhotoChange}
-              onPhotoRemove={handlePhotoRemove}
+              onPhotoChange={onPhotoChange}
+              onPhotoRemove={onPhotoRemove}
             />
           ))}
         </div>
