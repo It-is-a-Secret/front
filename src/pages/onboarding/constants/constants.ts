@@ -65,6 +65,27 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   'complete',
 ];
 
+export const ONBOARDING_STEP_LABELS: Record<
+  Exclude<OnboardingStep, 'complete'>,
+  string
+> = {
+  nickname: '닉네임 설정',
+  gender: '성별 선택',
+  birthYear: '출생 연도 선택',
+  department: '학과 선택',
+  mbti: 'MBTI 선택',
+  hobby: '취미/여가 선택',
+  foodStyle: '음식 스타일 선택',
+  lifeStyle: '라이프 스타일 선택',
+  personalityConversation: '성격/대화 스타일 선택',
+  dateStyle: '데이트 취향 선택',
+  contactRelationship: '연락/관계 스타일 선택',
+  pet: '반려동물 선택',
+  valueInterest: '가치관/관심사 선택',
+  blurStrength: '사진 블러 강도 설정',
+  photoUpload: '사진 업로드',
+};
+
 export const ONBOARDING_STEP_PROGRESS: Record<OnboardingStep, number> = {
   nickname: 7,
   gender: 14,
@@ -116,11 +137,6 @@ export const DEPARTMENTS = [
   '도시정보공학과',
   '환경에너지공학과',
   'AI융합학과',
-  '컴퓨터공학과',
-  '자율전공',
-  '인문자율전공',
-  '이공자율전공',
-  '사회자율전공',
 ] as const;
 
 export type DepartmentName = (typeof DEPARTMENTS)[number];

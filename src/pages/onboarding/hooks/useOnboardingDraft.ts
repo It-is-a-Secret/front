@@ -154,6 +154,25 @@ export const useOnboardingDraft = (memberId: number | undefined) => {
     setDraft((currentDraft) => ({...currentDraft, [key]: value}));
   };
 
+  const saveBeforeLeave = async () => {
+    if (memberId === undefined || hydratedMemberId !== memberId) return false;
+
+    try {
+      saveOnboardingDraft(memberId, draft);
+      setMetadataSaveError(false);
+
+      if (draft.photoSlots.some((slot) => slot.file)) {
+        await saveOnboardingPhotos(memberId, draft.photoSlots);
+        setPhotoSaveError(false);
+      }
+
+      return true;
+    } catch {
+      setMetadataSaveError(true);
+      return false;
+    }
+  };
+
   const toggleInterest = (interestStep: InterestStep, item: InterestItem) => {
     setDraft((currentDraft) => {
       const currentItems = currentDraft.selectedInterests[interestStep] ?? [];
@@ -229,6 +248,7 @@ export const useOnboardingDraft = (memberId: number | undefined) => {
     restoreError: memberId !== undefined && restoreErrorMemberId === memberId,
     photoRestoreError,
     saveError: metadataSaveError || photoSaveError,
+    saveBeforeLeave,
     retryRestore: () => setRestoreAttempt((attempt) => attempt + 1),
     updateDraft,
     toggleInterest,

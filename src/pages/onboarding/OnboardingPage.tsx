@@ -1,6 +1,6 @@
-import {useEffect, useRef} from 'react';
+import {useEffect, useRef, useState} from 'react';
 
-import {useQuery} from '@tanstack/react-query';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {useNavigate} from 'react-router-dom';
 
 import {
@@ -9,7 +9,12 @@ import {
   ONBOARDING_STEPS,
 } from '@/pages/onboarding/constants/constants';
 import type {InterestStep} from '@/pages/onboarding/constants/constants';
+import {
+  ONBOARDING_MUTATION_OPTIONS,
+  ONBOARDING_QUERY_OPTIONS,
+} from '@/pages/onboarding/api/query';
 import {useOnboardingDraft} from '@/pages/onboarding/hooks/useOnboardingDraft';
+import {buildCompleteOnboardingRequest} from '@/pages/onboarding/model/complete-onboarding';
 import {BirthYearStep} from '@/pages/onboarding/steps/BirthYearStep';
 import {BlurStrengthStep} from '@/pages/onboarding/steps/BlurStrengthStep';
 import {CompleteOnboardingStep} from '@/pages/onboarding/steps/CompleteOnboardingStep';
@@ -28,6 +33,7 @@ import {PhotoUploadStep} from '@/pages/onboarding/steps/PhotoUploadStep';
 import {ValueInterestStep} from '@/pages/onboarding/steps/ValueInterestStep';
 import {ToastMessage} from '@/pages/my/components/ToastMessage';
 import {MY_QUERY_OPTIONS} from '@/pages/my/api/query';
+import {QUERY_KEYS} from '@/shared/api';
 import {Button} from '@/shared/components/Button';
 import {Header} from '@/shared/components/Header';
 import {useToast} from '@/shared/hooks/useToast';
@@ -35,6 +41,11 @@ import {IcSvgLeft} from '@/shared/icons';
 
 export const OnboardingPage = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const completeMutation = useMutation(ONBOARDING_MUTATION_OPTIONS.COMPLETE());
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const profileQuery = useQuery({
     ...MY_QUERY_OPTIONS.PROFILE(),
     refetchOnMount: 'always',
@@ -49,6 +60,7 @@ export const OnboardingPage = () => {
     restoreError,
     saveError,
     photoRestoreError,
+    saveBeforeLeave,
     retryRestore,
     updateDraft,
     toggleInterest,
@@ -63,11 +75,13 @@ export const OnboardingPage = () => {
     showToast,
     fadeDuration,
   } = useToast({visibleDuration: 3000, fadeDuration: 300});
-  const errorToastMessage = photoRestoreError
-    ? '사진을 복원하지 못했어요. 사진 단계에서 다시 선택해 주세요.'
-    : saveError
-      ? '진행 내용을 저장하지 못했어요. 다시 시도해 주세요.'
-      : null;
+  const errorToastMessage =
+    submitError ??
+    (photoRestoreError
+      ? '사진을 복원하지 못했어요. 사진 단계에서 다시 선택해 주세요.'
+      : saveError
+        ? '진행 내용을 저장하지 못했어요. 다시 시도해 주세요.'
+        : null);
 
   useEffect(() => {
     if (!isReady || !errorToastMessage) {
@@ -106,9 +120,13 @@ export const OnboardingPage = () => {
     (step === 'department' && department.length === 0) ||
     (step === 'mbti' && !selectedMbti) ||
     (isInterestStep && currentInterestCount === 0);
-  const nextButtonText = isInterestStep
-    ? `다음 (${interestStepIndex + 1}/${INTEREST_STEPS.length})`
-    : '다음';
+  const nextButtonText = isSubmitting
+    ? '완료 중...'
+    : step === 'photoUpload' || step === 'complete'
+      ? '완료하기'
+      : isInterestStep
+        ? `다음 (${interestStepIndex + 1}/${INTEREST_STEPS.length})`
+        : '다음';
 
   const moveStep = (nextIndex: number) => {
     const nextStep = ONBOARDING_STEPS[nextIndex];
@@ -119,6 +137,8 @@ export const OnboardingPage = () => {
   };
 
   const handleBack = () => {
+    if (isSubmitting) return;
+
     if (currentStepIndex === 0) {
       navigate(-1);
       return;
@@ -127,8 +147,45 @@ export const OnboardingPage = () => {
     moveStep(currentStepIndex - 1);
   };
 
+  const handleComplete = async () => {
+    if (isSubmitting || memberId === undefined) return;
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const catalog = await queryClient.fetchQuery(
+        ONBOARDING_QUERY_OPTIONS.KEYWORDS()
+      );
+      const body = buildCompleteOnboardingRequest(draft, catalog);
+
+      await completeMutation.mutateAsync(body);
+      setHasCompletedOnboarding(true);
+      void queryClient.invalidateQueries({queryKey: QUERY_KEYS.profile.me()});
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error ? error.message : '온보딩을 완료하지 못했어요.'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleNext = () => {
+    if (step === 'photoUpload' || step === 'complete') {
+      void handleComplete();
+      return;
+    }
+
     moveStep(currentStepIndex + 1);
+  };
+
+  const handleLeave = async () => {
+    if (isSubmitting) return;
+
+    if (await saveBeforeLeave()) {
+      navigate('/home', {replace: true});
+    }
   };
 
   const renderStepContent = () => {
@@ -231,6 +288,7 @@ export const OnboardingPage = () => {
           />
         );
       case 'photoUpload':
+      case 'complete':
         return (
           <PhotoUploadStep
             photoSlots={photoSlots}
@@ -239,8 +297,6 @@ export const OnboardingPage = () => {
             onPhotoSort={sortPhotos}
           />
         );
-      case 'complete':
-        return <CompleteOnboardingStep onStart={() => navigate('/home')} />;
       case 'nickname':
       default:
         return (
@@ -251,6 +307,14 @@ export const OnboardingPage = () => {
         );
     }
   };
+
+  if (hasCompletedOnboarding) {
+    return (
+      <CompleteOnboardingStep
+        onStart={() => navigate('/home', {replace: true})}
+      />
+    );
+  }
 
   if (profileQuery.isError || (profileQuery.isFetchedAfterMount && !memberId)) {
     return (
@@ -288,15 +352,6 @@ export const OnboardingPage = () => {
     </div>
   );
 
-  if (step === 'complete') {
-    return (
-      <>
-        {renderStepContent()}
-        {errorToast}
-      </>
-    );
-  }
-
   return (
     <section className='flex min-h-dvh flex-col'>
       <Header
@@ -307,7 +362,7 @@ export const OnboardingPage = () => {
         rightItem={
           <span className='text-caption1-12r text-gray-400'>건너뛰기</span>
         }
-        onClickRight={() => moveStep(ONBOARDING_STEPS.length - 1)}
+        onClickRight={() => void handleLeave()}
         hasProgress
         progress={ONBOARDING_STEP_PROGRESS[step]}
       />
@@ -318,7 +373,7 @@ export const OnboardingPage = () => {
         <div className='pb-[2rem]'>
           <Button
             text={nextButtonText}
-            disabled={isNextDisabled}
+            disabled={isNextDisabled || isSubmitting}
             onClick={handleNext}
           />
         </div>

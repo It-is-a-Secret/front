@@ -100,6 +100,23 @@ export const parseStoredOnboardingDraft = (
   }
 };
 
+const getResumableStep = (
+  step: OnboardingStep
+): Exclude<OnboardingStep, 'complete'> =>
+  step === 'complete' ? 'photoUpload' : step;
+
+export const getOnboardingDraftStep = (memberId: number) => {
+  try {
+    const rawDraft = localStorage.getItem(getStorageKey(memberId));
+    if (!rawDraft) return null;
+
+    const storedDraft = parseStoredOnboardingDraft(rawDraft);
+    return storedDraft ? getResumableStep(storedDraft.step) : null;
+  } catch {
+    return null;
+  }
+};
+
 const openPhotoDb = () =>
   new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, 1);
@@ -225,7 +242,7 @@ export const loadOnboardingDraft = async (
 
   const draft: OnboardingDraft = {
     ...createInitialOnboardingDraft(),
-    step: storedDraft.step,
+    step: getResumableStep(storedDraft.step),
     nickname: storedDraft.nickname,
     selectedGender: storedDraft.selectedGender,
     birthYear: storedDraft.birthYear,

@@ -1,13 +1,21 @@
-import {useState} from 'react';
+import {useMemo, useState} from 'react';
+
+import {useQuery} from '@tanstack/react-query';
 import {useNavigate} from 'react-router-dom';
 
 import {MyMenuItem} from '@/pages/my/components/MyMenuItem';
 import {OnboardingUnfinishedCard} from '@/pages/my/components/OnboardingUnfinishedCard';
 import {Profile} from '@/pages/my/components/Profile';
+import {MY_QUERY_OPTIONS} from '@/pages/my/api/query';
 import {
   MyMenuSheet,
   type MyMenuSheetType,
 } from '@/pages/my/features/menu-sheet/MyMenuSheet';
+import {
+  ONBOARDING_STEP_LABELS,
+  ONBOARDING_STEPS,
+} from '@/pages/onboarding/constants/constants';
+import {getOnboardingDraftStep} from '@/pages/onboarding/model/onboarding-draft-storage';
 import {BottomSheet} from '@/shared/components/BottomSheet';
 import {Button} from '@/shared/components/Button';
 import {Header} from '@/shared/components/Header';
@@ -21,7 +29,22 @@ import {
 
 export const MyPage = () => {
   const navigate = useNavigate();
-  const onboardingCompleted = false;
+  const profileQuery = useQuery({
+    ...MY_QUERY_OPTIONS.PROFILE(),
+    refetchOnMount: 'always',
+  });
+  const memberId =
+    profileQuery.isFetchedAfterMount && !profileQuery.isError
+      ? profileQuery.data?.data?.id
+      : undefined;
+  const onboardingCompleted =
+    profileQuery.data?.data?.registrationStatus === 'COMPLETED';
+  const savedStep = useMemo(
+    () => (memberId === undefined ? null : getOnboardingDraftStep(memberId)),
+    [memberId]
+  );
+  const nextStep = savedStep ?? 'nickname';
+  const completedCount = ONBOARDING_STEPS.indexOf(nextStep);
   const [isChatNotificationOn, setIsChatNotificationOn] = useState(true);
   const [selectedMenuSheet, setSelectedMenuSheet] =
     useState<MyMenuSheetType | null>(null);
@@ -40,12 +63,12 @@ export const MyPage = () => {
           </h1>
         }
       />
-      {!onboardingCompleted && (
+      {memberId !== undefined && !onboardingCompleted && (
         <div className='mt-[1.6rem]'>
           <OnboardingUnfinishedCard
-            completedCount={4}
-            totalCount={8}
-            nextStepLabel='MBTI 선택'
+            completedCount={completedCount}
+            totalCount={ONBOARDING_STEPS.length - 1}
+            nextStepLabel={ONBOARDING_STEP_LABELS[nextStep]}
             onContinue={() => navigate('/onboarding')}
           />
         </div>

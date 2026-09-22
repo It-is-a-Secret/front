@@ -3,12 +3,27 @@ import {test} from 'node:test';
 
 import {createInitialOnboardingDraft} from '../src/pages/onboarding/model/onboarding-draft';
 import {
+  getOnboardingDraftStep,
   loadOnboardingDraft,
   parseStoredOnboardingDraft,
   saveOnboardingDraft,
 } from '../src/pages/onboarding/model/onboarding-draft-storage';
 
 const HOUR_MS = 60 * 60 * 1000;
+
+const useMemoryStorage = () => {
+  const entries = new Map<string, string>();
+  globalThis.localStorage = {
+    setItem: (key, value) => {
+      entries.set(key, value);
+    },
+    getItem: (key) => entries.get(key) ?? null,
+    removeItem: (key) => {
+      entries.delete(key);
+    },
+  } as Storage;
+  return entries;
+};
 
 const createStoredDraft = (updatedAt: number) => ({
   ...createInitialOnboardingDraft(),
@@ -45,16 +60,7 @@ test('rejects malformed, future, and outdated drafts', () => {
 });
 
 test('stores input fields and photo order without serializing files', () => {
-  const entries = new Map<string, string>();
-  globalThis.localStorage = {
-    setItem: (key, value) => {
-      entries.set(key, value);
-    },
-    getItem: (key) => entries.get(key) ?? null,
-    removeItem: (key) => {
-      entries.delete(key);
-    },
-  } as Storage;
+  const entries = useMemoryStorage();
   const draft = createInitialOnboardingDraft();
   draft.nickname = '테스트';
   draft.step = 'photoUpload';
@@ -78,6 +84,7 @@ test('stores input fields and photo order without serializing files', () => {
 });
 
 test('restores a text-only draft for the matching member', async () => {
+  useMemoryStorage();
   const draft = createInitialOnboardingDraft();
   draft.nickname = '이어하기';
   draft.birthYear = 2003;
@@ -93,4 +100,32 @@ test('restores a text-only draft for the matching member', async () => {
   assert.equal(restored.draft?.step, 'department');
   assert.equal(restored.photosUnavailable, false);
   assert.equal(otherMember.draft, null);
+});
+
+test('reads only the matching member step and ignores expired drafts', () => {
+  const entries = useMemoryStorage();
+  const now = Date.now();
+  entries.set(
+    'onboarding-draft:v1:101',
+    JSON.stringify({...createStoredDraft(now), step: 'mbti', photoCount: 1})
+  );
+  entries.set(
+    'onboarding-draft:v1:102',
+    JSON.stringify(createStoredDraft(now - 25 * HOUR_MS))
+  );
+
+  assert.equal(getOnboardingDraftStep(101), 'mbti');
+  assert.equal(getOnboardingDraftStep(102), null);
+  assert.equal(getOnboardingDraftStep(103), null);
+});
+
+test('pre-API complete drafts resume from photo upload', async () => {
+  const entries = useMemoryStorage();
+  entries.set(
+    'onboarding-draft:v1:101',
+    JSON.stringify({...createStoredDraft(Date.now()), step: 'complete'})
+  );
+
+  assert.equal(getOnboardingDraftStep(101), 'photoUpload');
+  assert.equal((await loadOnboardingDraft(101)).draft?.step, 'photoUpload');
 });

@@ -1,4 +1,5 @@
 import {mutationOptions, queryOptions} from '@tanstack/react-query';
+import {isHTTPError} from 'ky';
 
 import {api, API_ENDPOINT, QUERY_KEYS} from '@/shared/api';
 
@@ -13,10 +14,24 @@ import type {
   SaveImagesResponse,
 } from './type';
 
-const completeOnboarding = (body: CompleteOnboardingRequest) =>
-  api
-    .post(API_ENDPOINT.onboarding.complete, {json: body})
-    .json<CompleteOnboardingResponse>();
+const completeOnboarding = async (body: CompleteOnboardingRequest) => {
+  try {
+    return await api
+      .post(API_ENDPOINT.onboarding.complete, {json: body})
+      .json<CompleteOnboardingResponse>();
+  } catch (error) {
+    if (isHTTPError(error)) {
+      const data = error.data as {message?: string} | undefined;
+      throw new Error(data?.message || '온보딩을 완료하지 못했어요.', {
+        cause: error,
+      });
+    }
+
+    throw new Error('네트워크 연결을 확인한 뒤 다시 시도해 주세요.', {
+      cause: error,
+    });
+  }
+};
 
 const getKeywordCatalog = () =>
   api.get(API_ENDPOINT.onboarding.keywords).json<GetKeywordCatalogResponse>();
