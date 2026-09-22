@@ -26,8 +26,8 @@ export const OnboardingUnfinishedCard = ({
       </div>
       <div className='flex flex-col gap-[1.2rem]'>
         <p className='text-body1-15r mt-[2.4rem] text-gray-600'>
-          {completedCount}/{totalCount} 완료 · {nextStepLabel}부터 이어가
-          볼까요?
+          {completedCount}/{totalCount} 완료 · {nextStepLabel}부터{' '}
+          {completedCount === 0 ? '시작해 볼까요?' : '이어가 볼까요?'}
         </p>
 
         <div className='h-[0.3rem] overflow-hidden bg-gray-200'>
@@ -39,7 +39,7 @@ export const OnboardingUnfinishedCard = ({
         type='button'
         className='bg-primary-600 text-body2-15sb text-white-800 h-[4.8rem] rounded-[16px]'
         onClick={onContinue}>
-        온보딩 이어서 하기
+        {completedCount === 0 ? '온보딩 시작하기' : '온보딩 이어서 하기'}
       </button>
     </section>
   );
