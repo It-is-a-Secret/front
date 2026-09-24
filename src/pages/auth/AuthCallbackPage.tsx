@@ -1,12 +1,11 @@
 import {useEffect, useRef, useState} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 
-import {publicApi} from '@/shared/api/config/instance';
+import type {GetMyProfileResponse} from '@/pages/my/api/type';
+import {api, publicApi} from '@/shared/api/config/instance';
 import {setAccessToken} from '@/shared/api/config/auth-token';
 import {API_ENDPOINT} from '@/shared/api/end-point';
-import type {
-  KakaoCallbackResponse,
-} from '@/shared/types/auth/type';
+import type {KakaoCallbackResponse} from '@/shared/types/auth/type';
 
 const kakaoCallbackRequests = new Map<string, Promise<string>>();
 
@@ -63,6 +62,22 @@ export const AuthCallbackPage = () => {
         localStorage.removeItem('accessToken');
         setAccessToken(accessToken);
         sessionStorage.removeItem('kakaoRedirectUri');
+
+        const profile = await api
+          .get(API_ENDPOINT.profile.me)
+          .json<GetMyProfileResponse>();
+        const registrationStatus = profile.data?.registrationStatus;
+
+        if (registrationStatus === 'COMPLETED') {
+          navigate('/', {replace: true});
+          return;
+        }
+
+        if (registrationStatus === 'VERIFIED') {
+          navigate('/onboarding', {replace: true});
+          return;
+        }
+
         navigate('/auth?step=email', {replace: true});
       } catch (error) {
         console.error('카카오 로그인 처리에 실패했습니다.', error);
