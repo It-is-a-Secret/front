@@ -1,80 +1,41 @@
 import {useState} from 'react';
 
-import {ToastMessage} from '@/pages/my/components/ToastMessage';
+import type {ProfileInterestCategory} from '@/pages/my/model/profile-edit';
 import {Chip} from '@/pages/onboarding/components/Chip';
-import {
-  INTEREST_CATEGORIES,
-  INTEREST_STEPS,
-  MAX_INTEREST_COUNT,
-} from '@/pages/onboarding/constants/constants';
-import type {
-  InterestItem,
-  InterestStep,
-  SelectedInterests,
-} from '@/pages/onboarding/constants/constants';
+import {MAX_INTEREST_COUNT} from '@/pages/onboarding/constants/constants';
 import {Button} from '@/shared/components/Button';
 import {Header} from '@/shared/components/Header';
-import {useToast} from '@/shared/hooks/useToast';
 import {IcSvgLeft} from '@/shared/icons';
 
-const MOCK_LAST_CHANGED_DATE = '2026.00.00';
-
 interface InterestCategoryResetSheetProps {
-  selectedInterests: SelectedInterests;
+  categories: ProfileInterestCategory[];
+  selectedTagIds: number[];
   onClose: () => void;
-  onSubmit: (selectedInterests: SelectedInterests) => void;
 }
 
 export const InterestCategoryResetSheet = ({
-  selectedInterests,
+  categories,
+  selectedTagIds,
   onClose,
-  onSubmit,
 }: InterestCategoryResetSheetProps) => {
-  const [nextSelectedInterests, setNextSelectedInterests] =
-    useState<SelectedInterests>(selectedInterests);
-  const {
-    isVisible: isToastVisible,
-    isLeaving: isToastLeaving,
-    showToast,
-    hideToast,
-    fadeDuration,
-  } = useToast();
-
-  const isChanged =
-    JSON.stringify(nextSelectedInterests) !== JSON.stringify(selectedInterests);
+  const [nextSelectedTagIds, setNextSelectedTagIds] = useState(selectedTagIds);
 
   const handleToggleInterest = (
-    interestStep: InterestStep,
-    item: InterestItem
+    category: ProfileInterestCategory,
+    tagId: number
   ) => {
-    setNextSelectedInterests((prevSelectedInterests) => {
-      const currentItems = prevSelectedInterests[interestStep] ?? [];
-      const isSelected = currentItems.includes(item);
-
-      if (isSelected) {
-        return {
-          ...prevSelectedInterests,
-          [interestStep]: currentItems.filter(
-            (selectedItem) => selectedItem !== item
-          ),
-        };
+    setNextSelectedTagIds((selectedIds) => {
+      if (selectedIds.includes(tagId)) {
+        return selectedIds.filter((id) => id !== tagId);
       }
 
-      if (currentItems.length >= MAX_INTEREST_COUNT) {
-        return prevSelectedInterests;
-      }
-
-      return {
-        ...prevSelectedInterests,
-        [interestStep]: [...currentItems, item],
-      };
+      const selectedCount = category.tags.filter((tag) =>
+        selectedIds.includes(tag.id)
+      ).length;
+      return selectedCount >= MAX_INTEREST_COUNT
+        ? selectedIds
+        : [...selectedIds, tagId];
     });
-    hideToast();
-  };
-
-  const handleSubmit = () => {
-    onSubmit(nextSelectedInterests);
-    showToast();
   };
 
   return (
@@ -90,53 +51,38 @@ export const InterestCategoryResetSheet = ({
       <div className='flex min-h-0 flex-1 flex-col'>
         <div className='mt-[1.6rem] min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[3.6rem]'>
           <div className='flex flex-col gap-[2.4rem]'>
-          <h2 className='text-body4-16m text-gray-800'>관심 카테고리 재설정</h2>
-
-          {INTEREST_CATEGORIES.map((category, index) => {
-            const interestStep = INTEREST_STEPS[index];
-            const currentItems = nextSelectedInterests[interestStep] ?? [];
-
-            return (
+            <h2 className='text-body4-16m text-gray-800'>
+              관심 카테고리 재설정
+            </h2>
+            {categories.length === 0 && (
+              <p className='text-body1-15r text-gray-600'>
+                등록된 관심 카테고리가 없어요.
+              </p>
+            )}
+            {categories.map((category) => (
               <section
-                key={category.category}
+                key={category.code}
                 className='flex flex-col gap-[0.8rem]'>
                 <h3 className='text-body2-15sb text-primary'>
-                  {category.category}
+                  {category.name}
                 </h3>
-
                 <div className='flex flex-wrap gap-[0.4rem]'>
-                  {category.items.map((item) => (
+                  {category.tags.map((tag) => (
                     <Chip
-                      key={item}
-                      value={item}
-                      isSelected={currentItems.includes(item)}
-                      onClick={() => handleToggleInterest(interestStep, item)}
+                      key={tag.id}
+                      value={tag.name}
+                      isSelected={nextSelectedTagIds.includes(tag.id)}
+                      aria-pressed={nextSelectedTagIds.includes(tag.id)}
+                      onClick={() => handleToggleInterest(category, tag.id)}
                     />
                   ))}
                 </div>
               </section>
-            );
-          })}
+            ))}
           </div>
         </div>
-
-        <div className='bg-background relative shrink-0 pb-[2rem]'>
-          {isToastVisible && (
-            <div
-              className={`absolute right-0 bottom-[8.2rem] left-0 z-20 transition-opacity ${
-                isToastLeaving ? 'opacity-0' : 'opacity-100'
-              }`}
-              style={{transitionDuration: `${fadeDuration}ms`}}>
-              <ToastMessage message='관심 카테고리가 변경되었어요' />
-            </div>
-          )}
-
-          <Button
-            text='저장하기'
-            description={`최근 변경일: ${MOCK_LAST_CHANGED_DATE}`}
-            disabled={!isChanged || isToastVisible}
-            onClick={handleSubmit}
-          />
+        <div className='bg-background shrink-0 pb-[2rem]'>
+          <Button text='저장하기' disabled />
         </div>
       </div>
     </section>

@@ -6,7 +6,7 @@ import {
 } from '@/pages/onboarding/constants/constants';
 
 interface BlurStrengthScrollProps {
-  value: BlurStrength;
+  value?: BlurStrength;
   onChange: (strength: BlurStrength) => void;
 }
 
@@ -27,7 +27,8 @@ export const BlurStrengthScroll = ({
       return;
     }
 
-    const selectedIndex = BLUR_STRENGTHS.indexOf(value);
+    const selectedIndex =
+      value === undefined ? -1 : BLUR_STRENGTHS.indexOf(value);
 
     if (selectedIndex < 0) {
       return;

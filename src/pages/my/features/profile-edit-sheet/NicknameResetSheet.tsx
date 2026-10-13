@@ -1,56 +1,22 @@
 import {useState} from 'react';
 
-import {ToastMessage} from '@/pages/my/components/ToastMessage';
 import {Button} from '@/shared/components/Button';
-import {FieldErrorMessage} from '@/shared/components/FieldErrorMessage';
 import {Header} from '@/shared/components/Header';
 import {Input} from '@/shared/components/Input';
-import {useToast} from '@/shared/hooks/useToast';
 import {IcSvgLeft} from '@/shared/icons';
 
 const NICKNAME_MAX_LENGTH = 12;
-const MOCK_LAST_CHANGED_DATE = '2026.00.00';
 
 interface NicknameResetSheetProps {
   nickname: string;
   onClose: () => void;
-  onSubmit: (nickname: string) => void;
 }
 
 export const NicknameResetSheet = ({
   nickname,
   onClose,
-  onSubmit,
 }: NicknameResetSheetProps) => {
   const [nextNickname, setNextNickname] = useState(nickname);
-  const [nicknameStatus, setNicknameStatus] = useState<'idle' | 'available'>(
-    'idle'
-  );
-  const {
-    isVisible: isToastVisible,
-    isLeaving: isToastLeaving,
-    showToast,
-    hideToast,
-    fadeDuration,
-  } = useToast();
-
-  const hasNickname = nextNickname.length > 0;
-  const isAvailable = nicknameStatus === 'available';
-
-  const handleCheckDuplicate = () => {
-    setNicknameStatus('available');
-  };
-
-  const handleNicknameChange = (value: string) => {
-    setNextNickname(value);
-    setNicknameStatus('idle');
-    hideToast();
-  };
-
-  const handleSubmit = () => {
-    onSubmit(nextNickname);
-    showToast();
-  };
 
   return (
     <section className='flex min-h-dvh flex-col'>
@@ -78,47 +44,23 @@ export const NicknameResetSheet = ({
 
             <Input
               value={nextNickname}
-              onChange={(event) => handleNicknameChange(event.target.value)}
+              onChange={(event) => setNextNickname(event.target.value)}
               maxLength={NICKNAME_MAX_LENGTH}
               placeholder='ex) abcde'
               rightItem={
                 <button
                   type='button'
-                  disabled={!hasNickname}
-                  className='text-regular-10 bg-primary text-white-800 disabled:text-white-800 rounded-full px-[0.8rem] py-[0.6rem] disabled:bg-gray-200'
-                  onClick={handleCheckDuplicate}>
+                  disabled
+                  className='text-regular-10 bg-primary text-white-800 disabled:text-white-800 rounded-full px-[0.8rem] py-[0.6rem] disabled:bg-gray-200'>
                   중복확인
                 </button>
               }
             />
-
-            {isAvailable && (
-              <FieldErrorMessage
-                message='사용 가능한 닉네임이에요'
-                variant='default'
-                className='pl-[0.2rem]'
-              />
-            )}
           </div>
         </div>
 
         <div className='relative mt-auto pb-[2rem]'>
-          {isToastVisible && (
-            <div
-              className={`absolute right-0 bottom-[8.2rem] left-0 z-20 transition-opacity ${
-                isToastLeaving ? 'opacity-0' : 'opacity-100'
-              }`}
-              style={{transitionDuration: `${fadeDuration}ms`}}>
-              <ToastMessage message='닉네임이 변경되었어요' />
-            </div>
-          )}
-
-          <Button
-            text='저장하기'
-            description={`최근 변경일: ${MOCK_LAST_CHANGED_DATE}`}
-            disabled={!isAvailable || isToastVisible}
-            onClick={handleSubmit}
-          />
+          <Button text='저장하기' disabled />
         </div>
       </div>
     </section>

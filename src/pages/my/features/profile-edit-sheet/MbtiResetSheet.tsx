@@ -1,6 +1,5 @@
 import {useState} from 'react';
 
-import {ToastMessage} from '@/pages/my/components/ToastMessage';
 import {MbitCard} from '@/pages/onboarding/components/MbitCard';
 import {
   MBTI_TYPES,
@@ -8,42 +7,15 @@ import {
 } from '@/pages/onboarding/constants/constants';
 import {Button} from '@/shared/components/Button';
 import {Header} from '@/shared/components/Header';
-import {useToast} from '@/shared/hooks/useToast';
 import {IcSvgLeft} from '@/shared/icons';
 
-const MOCK_LAST_CHANGED_DATE = '2026.00.00';
-
 interface MbtiResetSheetProps {
-  mbti: MbtiType;
+  mbti?: MbtiType;
   onClose: () => void;
-  onSubmit: (mbti: MbtiType) => void;
 }
 
-export const MbtiResetSheet = ({
-  mbti,
-  onClose,
-  onSubmit,
-}: MbtiResetSheetProps) => {
-  const [selectedMbti, setSelectedMbti] = useState<MbtiType>(mbti);
-  const {
-    isVisible: isToastVisible,
-    isLeaving: isToastLeaving,
-    showToast,
-    hideToast,
-    fadeDuration,
-  } = useToast();
-
-  const isChanged = selectedMbti !== mbti;
-
-  const handleMbtiChange = (nextMbti: MbtiType) => {
-    setSelectedMbti(nextMbti);
-    hideToast();
-  };
-
-  const handleSubmit = () => {
-    onSubmit(selectedMbti);
-    showToast();
-  };
+export const MbtiResetSheet = ({mbti, onClose}: MbtiResetSheetProps) => {
+  const [selectedMbti, setSelectedMbti] = useState(mbti);
 
   return (
     <section className='flex min-h-dvh flex-col'>
@@ -65,29 +37,15 @@ export const MbtiResetSheet = ({
                 key={mbti}
                 mbti={mbti}
                 isSelected={selectedMbti === mbti}
-                onClick={() => handleMbtiChange(mbti)}
+                aria-pressed={selectedMbti === mbti}
+                onClick={() => setSelectedMbti(mbti)}
               />
             ))}
           </div>
         </div>
 
         <div className='relative mt-auto pb-[2rem]'>
-          {isToastVisible && (
-            <div
-              className={`absolute right-0 bottom-[8.2rem] left-0 z-20 transition-opacity ${
-                isToastLeaving ? 'opacity-0' : 'opacity-100'
-              }`}
-              style={{transitionDuration: `${fadeDuration}ms`}}>
-              <ToastMessage message='MBTI가 변경되었어요' />
-            </div>
-          )}
-
-          <Button
-            text='저장하기'
-            description={`최근 변경일: ${MOCK_LAST_CHANGED_DATE}`}
-            disabled={!isChanged || isToastVisible}
-            onClick={handleSubmit}
-          />
+          <Button text='저장하기' disabled />
         </div>
       </div>
     </section>

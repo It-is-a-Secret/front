@@ -1,6 +1,8 @@
+import {useState} from 'react';
+
 import {useSortable} from '@dnd-kit/react/sortable';
 
-import {IcSvgPlus, IcSvgX} from '@/shared/icons';
+import {IcSvgImage, IcSvgPlus, IcSvgX} from '@/shared/icons';
 
 import type {PhotoSlot} from '../hooks/usePhotoUploadSlots';
 
@@ -19,6 +21,8 @@ export const PhotoUploadSlot = ({
   onPhotoChange,
   onPhotoRemove,
 }: PhotoUploadSlotProps) => {
+  const [failedPreviewUrl, setFailedPreviewUrl] = useState<string | null>(null);
+  const hasPhoto = Boolean(slot.previewUrl || slot.objectKey);
   const {ref, isDragging} = useSortable({
     id: slot.id,
     index,
@@ -36,18 +40,24 @@ export const PhotoUploadSlot = ({
       <label
         htmlFor={inputId}
         className='flex size-full cursor-pointer items-center justify-center overflow-hidden'>
-        {slot.previewUrl ? (
+        {slot.previewUrl && slot.previewUrl !== failedPreviewUrl ? (
           <img
             src={slot.previewUrl}
             alt='업로드한 사진 미리보기'
             className='size-full object-cover'
+            onError={() => setFailedPreviewUrl(slot.previewUrl)}
           />
+        ) : hasPhoto ? (
+          <span className='flex flex-col items-center gap-[0.6rem] text-gray-400'>
+            <IcSvgImage className='size-[2.4rem]' />
+            <span className='text-caption1-12r'>미리보기 없음</span>
+          </span>
         ) : (
           <IcSvgPlus className='size-[2.4rem]' />
         )}
       </label>
 
-      {slot.previewUrl && (
+      {hasPhoto && (
         <button
           type='button'
           aria-label='사진 삭제'
