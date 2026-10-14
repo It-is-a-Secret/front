@@ -187,8 +187,11 @@ const deletePhotos = async (memberId: number) => {
 };
 
 export const clearOnboardingDraft = async (memberId: number) => {
-  localStorage.removeItem(getStorageKey(memberId));
-  await deletePhotos(memberId);
+  try {
+    localStorage.removeItem(getStorageKey(memberId));
+  } finally {
+    await deletePhotos(memberId);
+  }
 };
 
 export const loadOnboardingDraft = async (
