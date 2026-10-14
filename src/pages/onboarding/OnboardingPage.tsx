@@ -43,6 +43,9 @@ export const OnboardingPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const completeMutation = useMutation(ONBOARDING_MUTATION_OPTIONS.COMPLETE());
+  const uploadImagesMutation = useMutation(
+    ONBOARDING_MUTATION_OPTIONS.UPLOAD_IMAGES()
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -61,6 +64,7 @@ export const OnboardingPage = () => {
     saveError,
     photoRestoreError,
     saveBeforeLeave,
+    clearAfterComplete,
     retryRestore,
     updateDraft,
     toggleInterest,
@@ -159,9 +163,18 @@ export const OnboardingPage = () => {
       );
       const body = buildCompleteOnboardingRequest(draft, catalog);
 
+      await uploadImagesMutation.mutateAsync(draft);
       await completeMutation.mutateAsync(body);
+      try {
+        await clearAfterComplete();
+      } catch {
+        setSubmitError('온보딩은 완료됐지만 임시 사진을 지우지 못했어요.');
+      }
       setHasCompletedOnboarding(true);
       void queryClient.invalidateQueries({queryKey: QUERY_KEYS.profile.me()});
+      void queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.onboarding.images(),
+      });
     } catch (error) {
       setSubmitError(
         error instanceof Error ? error.message : '온보딩을 완료하지 못했어요.'
@@ -308,11 +321,24 @@ export const OnboardingPage = () => {
     }
   };
 
+  const errorToast = isToastVisible && errorToastMessage && (
+    <div
+      className={`fixed right-[2rem] bottom-[8.2rem] left-[2rem] z-[60] mx-auto max-w-[35rem] transition-opacity ${
+        isToastLeaving ? 'opacity-0' : 'opacity-100'
+      }`}
+      style={{transitionDuration: `${fadeDuration}ms`}}>
+      <ToastMessage message={errorToastMessage} />
+    </div>
+  );
+
   if (hasCompletedOnboarding) {
     return (
-      <CompleteOnboardingStep
-        onStart={() => navigate('/home', {replace: true})}
-      />
+      <>
+        <CompleteOnboardingStep
+          onStart={() => navigate('/home', {replace: true})}
+        />
+        {errorToast}
+      </>
     );
   }
 
@@ -341,16 +367,6 @@ export const OnboardingPage = () => {
   if (!isReady) {
     return <section className='min-h-dvh' aria-label='온보딩 불러오는 중' />;
   }
-
-  const errorToast = isToastVisible && errorToastMessage && (
-    <div
-      className={`fixed right-[2rem] bottom-[8.2rem] left-[2rem] z-[60] mx-auto max-w-[35rem] transition-opacity ${
-        isToastLeaving ? 'opacity-0' : 'opacity-100'
-      }`}
-      style={{transitionDuration: `${fadeDuration}ms`}}>
-      <ToastMessage message={errorToastMessage} />
-    </div>
-  );
 
   return (
     <section className='flex min-h-dvh flex-col'>

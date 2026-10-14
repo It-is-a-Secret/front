@@ -12,6 +12,7 @@ import type {
 import {createInitialOnboardingDraft} from '@/pages/onboarding/model/onboarding-draft';
 import type {OnboardingDraft} from '@/pages/onboarding/model/onboarding-draft';
 import {
+  clearOnboardingDraft,
   loadOnboardingDraft,
   saveOnboardingDraft,
   saveOnboardingPhotos,
@@ -32,6 +33,7 @@ export const useOnboardingDraft = (memberId: number | undefined) => {
   const lastSavedPhotoSlotsRef = useRef<OnboardingDraft['photoSlots'] | null>(
     null
   );
+  const completedMemberIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (memberId === undefined) return;
@@ -104,6 +106,7 @@ export const useOnboardingDraft = (memberId: number | undefined) => {
     if (
       memberId === undefined ||
       hydratedMemberId !== memberId ||
+      completedMemberIdRef.current === memberId ||
       lastSavedDraftRef.current === draft
     ) {
       return;
@@ -112,7 +115,10 @@ export const useOnboardingDraft = (memberId: number | undefined) => {
     let cancelled = false;
 
     try {
-      saveOnboardingDraft(memberId, draft);
+      saveOnboardingDraft(memberId, {
+        ...draft,
+        photoSlots: lastSavedPhotoSlotsRef.current ?? draft.photoSlots,
+      });
       lastSavedDraftRef.current = draft;
       queueMicrotask(() => {
         if (!cancelled) setMetadataSaveError(false);
@@ -128,25 +134,6 @@ export const useOnboardingDraft = (memberId: number | undefined) => {
     };
   }, [draft, memberId, hydratedMemberId]);
 
-  useEffect(() => {
-    if (
-      memberId === undefined ||
-      hydratedMemberId !== memberId ||
-      lastSavedPhotoSlotsRef.current === draft.photoSlots
-    ) {
-      return;
-    }
-
-    lastSavedPhotoSlotsRef.current = draft.photoSlots;
-    void saveOnboardingPhotos(memberId, draft.photoSlots).then(
-      () => {
-        setPhotoSaveError(false);
-        setPhotoRestoreError(false);
-      },
-      () => setPhotoSaveError(true)
-    );
-  }, [draft.photoSlots, memberId, hydratedMemberId]);
-
   const updateDraft = <Key extends keyof OnboardingDraft>(
     key: Key,
     value: OnboardingDraft[Key]
@@ -158,18 +145,35 @@ export const useOnboardingDraft = (memberId: number | undefined) => {
     if (memberId === undefined || hydratedMemberId !== memberId) return false;
 
     try {
+      await saveOnboardingPhotos(memberId, draft.photoSlots);
+      lastSavedPhotoSlotsRef.current = draft.photoSlots;
+      setPhotoSaveError(false);
+      setPhotoRestoreError(false);
       saveOnboardingDraft(memberId, draft);
       setMetadataSaveError(false);
-
-      if (draft.photoSlots.some((slot) => slot.file)) {
-        await saveOnboardingPhotos(memberId, draft.photoSlots);
-        setPhotoSaveError(false);
-      }
-
       return true;
     } catch {
-      setMetadataSaveError(true);
+      setPhotoSaveError(true);
       return false;
+    }
+  };
+
+  const clearAfterComplete = async () => {
+    if (memberId === undefined) return;
+
+    completedMemberIdRef.current = memberId;
+    lastSavedPhotoSlotsRef.current = null;
+    try {
+      await clearOnboardingDraft(memberId);
+    } finally {
+      setDraft((currentDraft) => ({
+        ...currentDraft,
+        photoSlots: currentDraft.photoSlots.map((slot) => ({
+          ...slot,
+          file: null,
+          previewUrl: null,
+        })),
+      }));
     }
   };
 
@@ -249,6 +253,7 @@ export const useOnboardingDraft = (memberId: number | undefined) => {
     photoRestoreError,
     saveError: metadataSaveError || photoSaveError,
     saveBeforeLeave,
+    clearAfterComplete,
     retryRestore: () => setRestoreAttempt((attempt) => attempt + 1),
     updateDraft,
     toggleInterest,
