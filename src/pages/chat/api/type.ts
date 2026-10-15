@@ -1,5 +1,7 @@
 import type {components, operations} from '@/shared/types/schema';
 
+export type ChatRoomSummary = components['schemas']['ChatRoomSummaryResponse'];
+
 export type GetChatRoomsResponse =
   components['schemas']['DataResponseListChatRoomSummaryResponse'];
 export type GetChatRoomResponse =

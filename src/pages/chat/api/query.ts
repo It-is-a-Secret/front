@@ -34,6 +34,8 @@ export const CHAT_QUERY_OPTIONS = {
     queryOptions({
       queryKey: QUERY_KEYS.chat.rooms(),
       queryFn: getChatRooms,
+      staleTime: 0,
+      refetchOnMount: 'always',
     }),
   ROOM: (roomId: number) =>
     queryOptions({
