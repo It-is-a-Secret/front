@@ -1,5 +1,5 @@
-import {useEffect, useRef, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
+import {useState} from 'react';
+import {useNavigate, useParams} from 'react-router-dom';
 
 import {ChatInputBox} from '@/pages/chat/components/ChatInputBox';
 import {ChatImageList} from '@/pages/chat/components/ChatImageList';
@@ -7,16 +7,15 @@ import {ChatReportSheet} from '@/pages/chat/components/ChatReportSheet';
 import {ChatRoomActionMenu} from '@/pages/chat/components/ChatRoomActionMenu';
 import {PhotoRevealEvent} from '@/pages/chat/components/PhotoRevealEvent';
 import {ChatMessageListSection} from '@/pages/chat/section/ChatMessageListSection';
+import {useChatRoomQuery} from '@/pages/chat/hooks/useChatRoomQuery';
+import {useChatRoomActions} from '@/pages/chat/hooks/useChatRoomActions';
+import {ChatRoomState} from '@/pages/chat/components/ChatRoomState';
+import {ChatRoomConfirmSheet} from '@/pages/chat/components/ChatRoomConfirmSheet';
 import {ToastMessage} from '@/pages/my/components/ToastMessage';
-import {BottomSheet} from '@/shared/components/BottomSheet';
-import {Button} from '@/shared/components/Button';
 import {Header} from '@/shared/components/Header';
-import {useToast} from '@/shared/hooks/useToast';
 import {IcSvgEtc, IcSvgLeft} from '@/shared/icons';
 
 const MOCK_CHAT_ROOM = {
-  nickname: '행복한코딩러',
-  publicPhotoCount: 2,
   photos: [
     {objectKey: '/profileLogo.png', displayOrder: 1, blurLevel: 0},
     {objectKey: '/complete.png', displayOrder: 2, blurLevel: 0},
@@ -27,69 +26,73 @@ const MOCK_CHAT_ROOM = {
 };
 
 export const ChatRoom = () => {
+  const {roomId: roomIdParam} = useParams();
+  const roomId = Number(roomIdParam);
+
+  if (!Number.isSafeInteger(roomId) || roomId <= 0) {
+    return <ChatRoomState title='올바르지 않은 채팅방이에요.' />;
+  }
+
+  return <ChatRoomContent key={roomId} roomId={roomId} />;
+};
+
+const ChatRoomContent = ({roomId}: {roomId: number}) => {
   const navigate = useNavigate();
-  const actionMenuRef = useRef<HTMLDivElement>(null);
-  const previewPhoto = MOCK_CHAT_ROOM.photos.find(
-    (photo) => photo.displayOrder === MOCK_CHAT_ROOM.publicPhotoCount,
-  );
   const [message, setMessage] = useState('');
   const [isRevealPreviewOpen, setIsRevealPreviewOpen] = useState(false);
-  const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
-  const [isReportSheetOpen, setIsReportSheetOpen] = useState(false);
-  const [isBlockSheetOpen, setIsBlockSheetOpen] = useState(false);
-  const [isLeaveSheetOpen, setIsLeaveSheetOpen] = useState(false);
-  const [isBlocked, setIsBlocked] = useState(false);
+  const chat = useChatRoomQuery(roomId);
+  const {
+    actionMenuRef,
+    isActionMenuOpen,
+    activeAction,
+    isBlocked,
+    toast,
+    toggleMenu,
+    openAction,
+    closeAction,
+    confirmAction,
+  } = useChatRoomActions(() => setMessage(''));
+  const {
+    memberId,
+    partnerNickname,
+    publicPhotoCount,
+    room,
+    messages,
+    messagesQuery,
+  } = chat;
   const {
     isVisible: isToastVisible,
     isLeaving: isToastLeaving,
-    showToast,
     fadeDuration,
-  } = useToast();
+  } = toast;
+  const isInputDisabled = isBlocked || room?.roomStatus !== 'ACTIVE';
+  const previewPhoto = MOCK_CHAT_ROOM.photos.find(
+    (photo) => photo.displayOrder === publicPhotoCount
+  );
 
-  useEffect(() => {
-    if (!isActionMenuOpen) {
-      return;
-    }
+  if (chat.isLoading || memberId === null) {
+    return (
+      <section
+        role='status'
+        className='text-body1-15r flex min-h-dvh items-center justify-center text-gray-600'>
+        대화를 불러오고 있어요.
+      </section>
+    );
+  }
 
-    const handlePointerDown = (event: PointerEvent) => {
-      if (!actionMenuRef.current?.contains(event.target as Node)) {
-        setIsActionMenuOpen(false);
-      }
-    };
-
-    document.addEventListener('pointerdown', handlePointerDown);
-
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown);
-    };
-  }, [isActionMenuOpen]);
-
-  const handleOpenReportSheet = () => {
-    setIsActionMenuOpen(false);
-    setIsReportSheetOpen(true);
-  };
-
-  const handleOpenBlockSheet = () => {
-    setIsActionMenuOpen(false);
-    setIsBlockSheetOpen(true);
-  };
-
-  const handleOpenLeaveSheet = () => {
-    setIsActionMenuOpen(false);
-    setIsLeaveSheetOpen(true);
-  };
-
-  const handleBlockUser = () => {
-    setIsBlockSheetOpen(false);
-    setIsBlocked(true);
-    setMessage('');
-    showToast();
-  };
-
-  const handleLeaveChatRoom = () => {
-    setIsLeaveSheetOpen(false);
-    navigate('/chat', {state: {toastMessage: '채팅방을 나갔어요'}});
-  };
+  if (chat.error) {
+    return (
+      <ChatRoomState
+        title={
+          chat.isUnavailable
+            ? '이 채팅방에 접근할 수 없어요.'
+            : '대화를 불러오지 못했어요.'
+        }
+        isRetrying={chat.isRetrying}
+        onRetry={chat.isUnavailable ? undefined : chat.retry}
+      />
+    );
+  }
 
   return (
     <section className='relative flex h-dvh flex-col'>
@@ -101,36 +104,51 @@ export const ChatRoom = () => {
           title={
             <div className='flex items-center gap-[0.8rem]'>
               <h1 className='text-title-18b text-gray-800'>
-                {MOCK_CHAT_ROOM.nickname}
+                {partnerNickname}
               </h1>
               <span className='bg-primary text-button2-10r text-white-800 rounded-full px-[0.6rem] py-[0.1rem]'>
-                {MOCK_CHAT_ROOM.publicPhotoCount}/5
+                {publicPhotoCount}/5
               </span>
             </div>
           }
           rightItem={<IcSvgEtc className='size-[3.2rem] text-gray-800' />}
-          onClickRight={() => setIsActionMenuOpen((prev) => !prev)}
+          onClickRight={toggleMenu}
         />
         <ChatImageList photos={MOCK_CHAT_ROOM.photos} />
         <div className='flex justify-end px-[2rem] pt-[0.8rem]'>
           <button
             type='button'
+            disabled={!previewPhoto || isInputDisabled}
             onClick={() => setIsRevealPreviewOpen(true)}
-            className='border-primary text-caption2-12sb text-primary rounded-full border px-[1.2rem] py-[0.5rem]'>
+            className='border-primary text-caption2-12sb text-primary rounded-full border px-[1.2rem] py-[0.5rem] disabled:opacity-50'>
             이벤트 미리보기
           </button>
         </div>
         {isActionMenuOpen && (
           <ChatRoomActionMenu
-            onReport={handleOpenReportSheet}
-            onBlock={handleOpenBlockSheet}
-            onLeave={handleOpenLeaveSheet}
+            onReport={() => openAction('report')}
+            onBlock={() => openAction('block')}
+            onLeave={() => openAction('leave')}
           />
         )}
       </div>
 
       <main className='flex min-h-0 flex-1 flex-col'>
-        <ChatMessageListSection />
+        <ChatMessageListSection
+          messages={messages}
+          memberId={memberId}
+          partnerLastReadMessageId={room?.partnerLastReadMessageId}
+          hasNextPage={messagesQuery.hasNextPage}
+          isFetchingNextPage={messagesQuery.isFetchingNextPage}
+          isFetchNextPageError={messagesQuery.isFetchNextPageError}
+          onLoadPreviousMessages={messagesQuery.fetchNextPage}
+        />
+
+        {isInputDisabled && (
+          <p className='text-body1-15r px-[2rem] py-[0.8rem] text-center text-gray-600'>
+            메시지를 보낼 수 없는 대화예요.
+          </p>
+        )}
 
         <div className='relative'>
           {isToastVisible && (
@@ -146,97 +164,40 @@ export const ChatRoom = () => {
           <ChatInputBox
             value={message}
             onValueChange={setMessage}
-            inputProps={{disabled: isBlocked}}
-            submitDisabled={isBlocked || !message.trim()}
+            inputProps={{disabled: isInputDisabled}}
+            submitDisabled
+            placeholder={
+              isInputDisabled
+                ? '메시지를 보낼 수 없어요'
+                : '메시지를 입력하세요'
+            }
             onSubmit={(event) => {
               event.preventDefault();
-
-              if (isBlocked) {
-                return;
-              }
-
-              setMessage('');
             }}
           />
         </div>
       </main>
 
-      <ChatReportSheet
-        open={isReportSheetOpen}
-        onClose={() => setIsReportSheetOpen(false)}
-      />
+      <ChatReportSheet open={activeAction === 'report'} onClose={closeAction} />
       {isRevealPreviewOpen && previewPhoto && (
         <PhotoRevealEvent
           photoUrl={previewPhoto.objectKey}
           displayOrder={previewPhoto.displayOrder}
           totalCount={MOCK_CHAT_ROOM.photos.length}
-          partnerNickname={MOCK_CHAT_ROOM.nickname}
+          partnerNickname={partnerNickname}
           onClose={() => setIsRevealPreviewOpen(false)}
         />
       )}
-      <BottomSheet
-        open={isBlockSheetOpen}
-        ariaLabel='사용자 차단 확인'
-        onClose={() => setIsBlockSheetOpen(false)}>
-        <div className='flex flex-col items-center px-[1.2rem] pb-[3.6rem] text-center'>
-          <img src='/chatBlock.png' alt='' className='size-[9.2rem]' />
-          <h2 className='text-title-22b text-primary mt-[1.6rem] mb-[0.8rem]'>
-            이 사용자를 차단할까요?
-          </h2>
-          <p className='text-body1-15r mb-[2.8rem] whitespace-pre-line text-gray-600'>
-            차단 후에는 서로 탐색·채팅에서 노출되지 않아요
-          </p>
-          <div className='flex w-full gap-[0.8rem]'>
-            <div className='flex-[1]'>
-              <Button
-                text='취소'
-                className='border-primary text-button1-14b text-primary h-[5.6rem] rounded-[28px] border'
-                onClick={() => setIsBlockSheetOpen(false)}
-              />
-            </div>
-            <div className='flex-[1.8]'>
-              <Button
-                text='차단하기'
-                aria-label={`${MOCK_CHAT_ROOM.nickname} 차단하기`}
-                className='bg-primary text-button1-14b text-white-800 h-[5.6rem] rounded-[28px] shadow-[0_8px_10px_0_rgba(194,30,86,0.25)]'
-                onClick={handleBlockUser}
-              />
-            </div>
-          </div>
-        </div>
-      </BottomSheet>
-      <BottomSheet
-        open={isLeaveSheetOpen}
-        ariaLabel='채팅방 나가기 확인'
-        onClose={() => setIsLeaveSheetOpen(false)}>
-        <div className='flex flex-col items-center px-[1.2rem] pb-[3.6rem] text-center'>
-          <img src='/chatOut.png' alt='' className='size-[9.2rem]' />
-          <h2 className='text-title-22b text-primary mt-[1.6rem] mb-[0.8rem]'>
-            대화를 종료할까요?
-          </h2>
-          <p className='text-body1-15r mb-[2.8rem] whitespace-pre-line text-gray-600'>
-            채팅방을 나가면 이전 대화는 다시 볼 수 없으며,
-            {'\n'}서로 탐색·채팅에서 노출되지 않아요
-          </p>
-          <div className='flex w-full gap-[0.8rem]'>
-            <div className='flex-[1]'>
-              <Button
-                text='취소'
-                className='border-primary text-button1-14b text-primary h-[5.6rem] rounded-[28px] border'
-                onClick={() => setIsLeaveSheetOpen(false)}
-              />
-            </div>
-            <div className='flex-[1.8]'>
-              <Button
-                text='채팅방 나가기'
-                aria-label={`${MOCK_CHAT_ROOM.nickname} 채팅방 나가기`}
-                className='bg-primary text-button1-14b text-white-800 h-[5.6rem] rounded-[28px] shadow-[0_8px_10px_0_rgba(194,30,86,0.25)]'
-                onClick={handleLeaveChatRoom}
-              />
-            </div>
-          </div>
-        </div>
-      </BottomSheet>
+      <ChatRoomConfirmSheet
+        action={
+          activeAction === 'block' || activeAction === 'leave'
+            ? activeAction
+            : null
+        }
+        partnerNickname={partnerNickname}
+        onClose={closeAction}
+        onConfirm={confirmAction}
+      />
     </section>
   );
 };

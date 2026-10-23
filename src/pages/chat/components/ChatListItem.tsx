@@ -2,18 +2,7 @@ import {Link} from 'react-router-dom';
 
 import type {ChatRoomSummary} from '@/pages/chat/api/type';
 import {formatChatRelativeTime} from '@/pages/chat/utils/format-chat-time';
-
-const REVEALED_PHOTO_COUNT: Record<
-  NonNullable<ChatRoomSummary['progressStatus']>,
-  number
-> = {
-  MATCHED: 0,
-  PHOTO_REVEAL_STEP_1: 1,
-  PHOTO_REVEAL_STEP_2: 2,
-  PHOTO_REVEAL_STEP_3: 3,
-  PHOTO_REVEAL_STEP_4: 4,
-  COMPLETED: 5,
-};
+import {getRevealedPhotoCount} from '@/pages/chat/utils/get-revealed-photo-count';
 
 export const ChatListItem = ({
   roomId,
@@ -23,9 +12,7 @@ export const ChatListItem = ({
   progressStatus,
 }: ChatRoomSummary) => {
   const hasUnread = unreadCount > 0;
-  const publicPhotoCount = progressStatus
-    ? REVEALED_PHOTO_COUNT[progressStatus]
-    : 0;
+  const publicPhotoCount = getRevealedPhotoCount(progressStatus);
   const sentAt = lastMessage?.createdAt
     ? formatChatRelativeTime(lastMessage.createdAt)
     : '';

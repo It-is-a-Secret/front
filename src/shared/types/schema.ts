@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/api/members/me/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 프로필 수정
+         * @description 온보딩 이후 수정 가능한 항목(닉네임·MBTI·관심사) 전체를 받아, 현재 값과 다른 항목만 반영한다. 항목별로 30일에 한 번만 변경할 수 있고 실제로 바뀐 항목의 변경일만 갱신된다. 바뀐 항목 중 하나라도 제한에 걸리면 아무것도 반영하지 않는다(409 NICKNAME/MBTI/KEYWORDS_CHANGE_LIMITED). mbti=null은 "모름". 성별·생년·학과는 수정 대상이 아니며 보내도 무시한다. 닉네임 중복 409, 온보딩 전 403.
+         */
+        put: operations["updateProfile"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/reports": {
         parameters: {
             query?: never;
@@ -75,7 +95,7 @@ export interface paths {
         put?: never;
         /**
          * 온보딩 완료
-         * @description 닉네임·생년·학과·MBTI·성별·관심사를 저장하고 가입을 완료한다(VERIFIED → COMPLETED).
+         * @description 닉네임·생년·학과·MBTI·성별·관심사를 저장하고 가입을 완료한다(VERIFIED → COMPLETED). 가입 단계 전이 전용이라 완료 후 재호출은 409 ALREADY_ONBOARDED이며, 이후 수정은 PUT /profile을 쓴다.
          */
         post: operations["completeOnboarding"];
         delete?: never;
@@ -249,9 +269,29 @@ export interface paths {
         };
         /**
          * 내 프로필 조회
-         * @description 닉네임·생년·학과·MBTI·관심사·가입 단계를 반환한다.
+         * @description 닉네임·생년·학과·MBTI·관심사·가입 단계와, 수정 가능 항목(닉네임·MBTI·관심사)별 30일 변경 제한 상태(profileEdit: lastChangedAt·nextChangeableAt·changeable)를 반환한다. 온보딩 이후 변경한 적 없는 항목은 두 시각이 null이고 즉시 변경 가능하다. 온보딩 미완료 회원은 수정 대상이 아니므로 profileEdit이 null이다.
          */
         get: operations["getMyProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/members/me/nickname-availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 닉네임 사용 가능 여부 확인
+         * @description 다른 회원이 사용 중인 닉네임인지 확인한다. 본인의 현재 닉네임은 available=true. 온보딩 중에도 사용할 수 있다. 조회 시점 결과이며, 온보딩·프로필 수정 저장 시 서버가 다시 검증한다.
+         */
+        get: operations["checkNickNameAvailability"];
         put?: never;
         post?: never;
         delete?: never;
@@ -312,6 +352,26 @@ export interface paths {
          * @description 온보딩 완료한 이성 회원을 가중 점수(키워드·MBTI·년생·학과)순으로 정렬해 page/size 페이지네이션한다. 동점은 최근 7일 접속 우선으로 가른다. 다음 페이지는 page를 1씩 올려 요청한다. 온보딩 미완료자는 403.
          */
         get: operations["getDiscovery"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/discovery/feeds/{feedId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 탐색 카드 상세 조회
+         * @description 선택한 카드의 기본 정보(닉네임·생년·학과·MBTI·성별)와 관심사 키워드를 반환한다. 키워드마다 조회자도 선택한 태그면 matched=true. 사진은 GET /api/feeds/{feedId}/images로 따로 조회한다. 탐색 목록과 같은 노출 조건(이성·활성·차단 아님·사진 5장 READY)을 재검증하며, 대상이 없거나 조건을 충족하지 않으면 사유 구분 없이 404. 조회자 온보딩 미완료 403.
+         */
+        get: operations["getCardDetail"];
         put?: never;
         post?: never;
         delete?: never;
@@ -464,32 +524,10 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        ReportRequest: {
-            /** Format: int64 */
-            targetMemberId: number;
-            /** Format: int64 */
-            chatRoomId?: number;
-            /** @enum {string} */
-            reason: "SPAM" | "INAPPROPRIATE_CHAT" | "SEXUAL_HARASSMENT" | "HATE_SPEECH" | "PHOTO_THEFT" | "ETC";
-            detail?: string;
-        };
-        VerifySchoolEmailRequest: {
-            schoolEmail?: string;
-            code?: string;
-        };
-        SendSchoolEmailCodeRequest: {
-            schoolEmail?: string;
-        };
-        OnboardingRequest: {
+        ProfileUpdateRequest: {
             nickName?: string;
-            /** Format: int32 */
-            birthYear: number;
-            /** @enum {string} */
-            department: "THEOLOGY" | "CHRISTIAN_EDUCATION" | "KOREAN_LANGUAGE" | "ENGLISH" | "RUSSIAN" | "CHINESE" | "EARLY_CHILDHOOD_EDUCATION" | "PERFORMING_ARTS" | "MUSIC" | "DIGITAL_MEDIA_DESIGN" | "COSMETIC_INVENTION_DESIGN" | "BEAUTY_MEDICAL_DESIGN" | "GAME_CONTENT" | "PRACTICAL_MUSIC" | "SPORTS_SCIENCE" | "SPORTS_APPLIED_INDUSTRY" | "GLOBAL_BUSINESS" | "PUBLIC_ADMINISTRATION" | "TOURISM_MANAGEMENT" | "PUBLIC_GOVERNANCE" | "TOURISM" | "FOOD_NUTRITION" | "COMPUTER_ENGINEERING" | "INFORMATION_ELECTRICAL_ELECTRONIC" | "STATISTICS_DATA_SCIENCE" | "SOFTWARE" | "URBAN_INFORMATION_ENGINEERING" | "ENVIRONMENTAL_ENERGY_ENGINEERING" | "AI_CONVERGENCE" | "SMART_CITY_ENGINEERING" | "MARINE_BIO_ENGINEERING" | "CONVERGENCE_SOFTWARE";
             /** @enum {string} */
             mbti?: "ISTJ" | "ISFJ" | "INFJ" | "INTJ" | "ISTP" | "ISFP" | "INFP" | "INTP" | "ESTP" | "ESFP" | "ENFP" | "ENTP" | "ESTJ" | "ESFJ" | "ENFJ" | "ENTJ";
-            /** @enum {string} */
-            gender: "MALE" | "FEMALE";
             keywordTagIds?: number[];
         };
         DataResponseMemberProfileResponse: {
@@ -521,24 +559,79 @@ export interface components {
             /** @enum {string} */
             registrationStatus?: "UNVERIFIED" | "VERIFIED" | "COMPLETED";
             keywords?: components["schemas"]["MemberKeywordResponse"][];
+            profileEdit?: components["schemas"]["ProfileEditStatusResponse"];
         };
-        FeedImageSaveRequest: {
-            images?: components["schemas"]["Image"][];
+        /** @description 프로필 항목 하나의 30일 변경 제한 상태 */
+        ProfileEditItemStatus: {
+            /** Format: date-time */
+            lastChangedAt?: string;
+            /** Format: date-time */
+            nextChangeableAt?: string;
+            changeable?: boolean;
         };
-        Image: {
+        ProfileEditStatusResponse: {
+            nickName?: components["schemas"]["ProfileEditItemStatus"];
+            mbti?: components["schemas"]["ProfileEditItemStatus"];
+            keywords?: components["schemas"]["ProfileEditItemStatus"];
+        };
+        ReportRequest: {
+            /** Format: int64 */
+            targetMemberId: number;
+            /** Format: int64 */
+            chatRoomId?: number;
+            /** @enum {string} */
+            reason: "SPAM" | "INAPPROPRIATE_CHAT" | "SEXUAL_HARASSMENT" | "HATE_SPEECH" | "PHOTO_THEFT" | "ETC";
+            detail?: string;
+        };
+        VerifySchoolEmailRequest: {
+            schoolEmail?: string;
+            code?: string;
+        };
+        SendSchoolEmailCodeRequest: {
+            schoolEmail?: string;
+        };
+        OnboardingRequest: {
+            nickName?: string;
+            /** Format: int32 */
+            birthYear: number;
+            /** @enum {string} */
+            department: "THEOLOGY" | "CHRISTIAN_EDUCATION" | "KOREAN_LANGUAGE" | "ENGLISH" | "RUSSIAN" | "CHINESE" | "EARLY_CHILDHOOD_EDUCATION" | "PERFORMING_ARTS" | "MUSIC" | "DIGITAL_MEDIA_DESIGN" | "COSMETIC_INVENTION_DESIGN" | "BEAUTY_MEDICAL_DESIGN" | "GAME_CONTENT" | "PRACTICAL_MUSIC" | "SPORTS_SCIENCE" | "SPORTS_APPLIED_INDUSTRY" | "GLOBAL_BUSINESS" | "PUBLIC_ADMINISTRATION" | "TOURISM_MANAGEMENT" | "PUBLIC_GOVERNANCE" | "TOURISM" | "FOOD_NUTRITION" | "COMPUTER_ENGINEERING" | "INFORMATION_ELECTRICAL_ELECTRONIC" | "STATISTICS_DATA_SCIENCE" | "SOFTWARE" | "URBAN_INFORMATION_ENGINEERING" | "ENVIRONMENTAL_ENERGY_ENGINEERING" | "AI_CONVERGENCE" | "SMART_CITY_ENGINEERING" | "MARINE_BIO_ENGINEERING" | "CONVERGENCE_SOFTWARE";
+            /** @enum {string} */
+            mbti?: "ISTJ" | "ISFJ" | "INFJ" | "INTJ" | "ISTP" | "ISFP" | "INFP" | "INTP" | "ESTP" | "ESFP" | "ENFP" | "ENTP" | "ESTJ" | "ESFJ" | "ENFJ" | "ENTJ";
+            /** @enum {string} */
+            gender: "MALE" | "FEMALE";
+            keywordTagIds?: number[];
+        };
+        /** @description 피드 사진 저장 요청의 사진 한 장 */
+        FeedImageSaveItem: {
             objectKey?: string;
             /** Format: int32 */
             displayOrder: number;
             /** Format: int32 */
             blurLevel?: number;
         };
+        FeedImageSaveRequest: {
+            images?: components["schemas"]["FeedImageSaveItem"][];
+        };
         DataResponseFeedImageResponse: {
             /** Format: date-time */
             timestamp?: string;
             data?: components["schemas"]["FeedImageResponse"];
         };
+        /** @description 내 피드 사진 한 장(블러본·처리 상태) */
+        FeedImageItem: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int32 */
+            displayOrder?: number;
+            variantUrl?: string;
+            /** Format: int32 */
+            blurLevel?: number;
+            /** @enum {string} */
+            processingStatus?: "PROCESSING" | "READY" | "FAILED";
+        };
         FeedImageResponse: {
-            images?: components["schemas"]["Image"][];
+            images?: components["schemas"]["FeedImageItem"][];
         };
         ImageRequest: {
             fileName?: string;
@@ -611,6 +704,15 @@ export interface components {
             timestamp?: string;
             data?: string;
         };
+        DataResponseNickNameAvailabilityResponse: {
+            /** Format: date-time */
+            timestamp?: string;
+            data?: components["schemas"]["NickNameAvailabilityResponse"];
+        };
+        NickNameAvailabilityResponse: {
+            nickName?: string;
+            available?: boolean;
+        };
         DataResponseListKeywordCategoryResponse: {
             /** Format: date-time */
             timestamp?: string;
@@ -637,8 +739,14 @@ export interface components {
             timestamp?: string;
             data?: components["schemas"]["PublicFeedImagesResponse"];
         };
+        /** @description 공개 피드 사진 한 장(블러본) */
+        PublicFeedImageItem: {
+            /** Format: int32 */
+            displayOrder?: number;
+            variantUrl?: string;
+        };
         PublicFeedImagesResponse: {
-            images?: components["schemas"]["Image"][];
+            images?: components["schemas"]["PublicFeedImageItem"][];
         };
         DataResponseMyFeedImagesResponse: {
             /** Format: date-time */
@@ -647,7 +755,7 @@ export interface components {
         };
         MyFeedImagesResponse: {
             reuploadRequired?: boolean;
-            images?: components["schemas"]["Image"][];
+            images?: components["schemas"]["FeedImageItem"][];
         };
         DataResponseListDiscoveryCardResponse: {
             /** Format: date-time */
@@ -667,6 +775,36 @@ export interface components {
             mbti?: "ISTJ" | "ISFJ" | "INFJ" | "INTJ" | "ISTP" | "ISFP" | "INFP" | "INTP" | "ESTP" | "ESFP" | "ENFP" | "ENTP" | "ESTJ" | "ESFJ" | "ENFJ" | "ENTJ";
             /** @enum {string} */
             gender?: "MALE" | "FEMALE";
+        };
+        DataResponseDiscoveryCardDetailResponse: {
+            /** Format: date-time */
+            timestamp?: string;
+            data?: components["schemas"]["DiscoveryCardDetailResponse"];
+        };
+        DiscoveryCardDetailResponse: {
+            /** Format: int64 */
+            feedId?: number;
+            nickName?: string;
+            /** Format: int32 */
+            birthYear?: number;
+            /** @enum {string} */
+            department?: "THEOLOGY" | "CHRISTIAN_EDUCATION" | "KOREAN_LANGUAGE" | "ENGLISH" | "RUSSIAN" | "CHINESE" | "EARLY_CHILDHOOD_EDUCATION" | "PERFORMING_ARTS" | "MUSIC" | "DIGITAL_MEDIA_DESIGN" | "COSMETIC_INVENTION_DESIGN" | "BEAUTY_MEDICAL_DESIGN" | "GAME_CONTENT" | "PRACTICAL_MUSIC" | "SPORTS_SCIENCE" | "SPORTS_APPLIED_INDUSTRY" | "GLOBAL_BUSINESS" | "PUBLIC_ADMINISTRATION" | "TOURISM_MANAGEMENT" | "PUBLIC_GOVERNANCE" | "TOURISM" | "FOOD_NUTRITION" | "COMPUTER_ENGINEERING" | "INFORMATION_ELECTRICAL_ELECTRONIC" | "STATISTICS_DATA_SCIENCE" | "SOFTWARE" | "URBAN_INFORMATION_ENGINEERING" | "ENVIRONMENTAL_ENERGY_ENGINEERING" | "AI_CONVERGENCE" | "SMART_CITY_ENGINEERING" | "MARINE_BIO_ENGINEERING" | "CONVERGENCE_SOFTWARE";
+            departmentLabel?: string;
+            /** @enum {string} */
+            mbti?: "ISTJ" | "ISFJ" | "INFJ" | "INTJ" | "ISTP" | "ISFP" | "INFP" | "INTP" | "ESTP" | "ESFP" | "ENFP" | "ENTP" | "ESTJ" | "ESFJ" | "ENFJ" | "ENTJ";
+            /** @enum {string} */
+            gender?: "MALE" | "FEMALE";
+            keywords?: components["schemas"]["DiscoveryCardKeywordItem"][];
+        };
+        /** @description 상대가 선택한 키워드 한 건 */
+        DiscoveryCardKeywordItem: {
+            categoryCode?: string;
+            categoryName?: string;
+            /** Format: int64 */
+            tagId?: number;
+            tagCode?: string;
+            tagName?: string;
+            matched?: boolean;
         };
         ChatRoomSummaryResponse: {
             /** Format: int64 */
@@ -699,8 +837,17 @@ export interface components {
             timestamp?: string;
             data?: components["schemas"]["RevealedFeedImagesResponse"];
         };
+        /** @description 채팅 단계별 공개 사진 한 장 */
+        RevealedFeedImageItem: {
+            /** @enum {string} */
+            role?: "ME" | "PARTNER";
+            /** Format: int32 */
+            displayOrder?: number;
+            revealed?: boolean;
+            imageUrl?: string;
+        };
         RevealedFeedImagesResponse: {
-            images?: components["schemas"]["Image"][];
+            images?: components["schemas"]["RevealedFeedImageItem"][];
         };
         DataResponseListChatMessageResponse: {
             /** Format: date-time */
@@ -716,6 +863,30 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    updateProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfileUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DataResponseMemberProfileResponse"];
+                };
+            };
+        };
+    };
     report: {
         parameters: {
             query?: never;
@@ -729,8 +900,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -751,8 +922,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -773,8 +944,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -911,8 +1082,8 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -933,8 +1104,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -975,8 +1146,8 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1020,6 +1191,29 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["DataResponseMemberProfileResponse"];
+                };
+            };
+        };
+    };
+    checkNickNameAvailability: {
+        parameters: {
+            query: {
+                /** @description 확인할 닉네임(1~30자) */
+                nickName: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DataResponseNickNameAvailabilityResponse"];
                 };
             };
         };
@@ -1087,6 +1281,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["DataResponseListDiscoveryCardResponse"];
+                };
+            };
+        };
+    };
+    getCardDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                feedId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DataResponseDiscoveryCardDetailResponse"];
                 };
             };
         };
@@ -1216,8 +1432,8 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Found */
+            302: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1236,8 +1452,8 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
