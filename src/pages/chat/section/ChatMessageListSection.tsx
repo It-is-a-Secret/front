@@ -1,3 +1,4 @@
+import {useCallback} from 'react';
 import type {ChatRoomSummary} from '@/pages/chat/api/type';
 import {ChatMessage} from '@/pages/chat/components/ChatMessage';
 import {SystemMessage} from '@/pages/chat/components/SystemMessage';
@@ -9,6 +10,7 @@ import {
 interface ChatMessageListSectionProps extends UseChatMessageScrollParams {
   memberId: number;
   partnerLastReadMessageId: ChatRoomSummary['partnerLastReadMessageId'];
+  onReadLatest?: (messageId: number) => void;
 }
 
 export const ChatMessageListSection = ({
@@ -19,7 +21,12 @@ export const ChatMessageListSection = ({
   isFetchingNextPage,
   isFetchNextPageError,
   onLoadPreviousMessages,
+  onReadLatest,
 }: ChatMessageListSectionProps) => {
+  const latestMessageId = messages.at(-1)?.messageId;
+  const handleReachBottom = useCallback(() => {
+    if (latestMessageId != null) onReadLatest?.(latestMessageId);
+  }, [latestMessageId, onReadLatest]);
   const {
     containerRef,
     loadPreviousRef,
@@ -31,6 +38,9 @@ export const ChatMessageListSection = ({
     isFetchingNextPage,
     isFetchNextPageError,
     onLoadPreviousMessages,
+    onReachBottom: handleReachBottom,
+    scrollToMessageId:
+      messages.at(-1)?.senderId === memberId ? latestMessageId : undefined,
   });
 
   return (

@@ -1,29 +1,19 @@
-import {useState} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
 
 import {ChatInputBox} from '@/pages/chat/components/ChatInputBox';
-import {ChatImageList} from '@/pages/chat/components/ChatImageList';
 import {ChatReportSheet} from '@/pages/chat/components/ChatReportSheet';
 import {ChatRoomActionMenu} from '@/pages/chat/components/ChatRoomActionMenu';
-import {PhotoRevealEvent} from '@/pages/chat/components/PhotoRevealEvent';
 import {ChatMessageListSection} from '@/pages/chat/section/ChatMessageListSection';
+import {ChatPhotoSection} from '@/pages/chat/section/ChatPhotoSection';
 import {useChatRoomQuery} from '@/pages/chat/hooks/useChatRoomQuery';
 import {useChatRoomActions} from '@/pages/chat/hooks/useChatRoomActions';
+import {useChatComposer} from '@/pages/chat/hooks/useChatComposer';
+import {useChatRoomRealtime} from '@/pages/chat/hooks/useChatRoomRealtime';
 import {ChatRoomState} from '@/pages/chat/components/ChatRoomState';
 import {ChatRoomConfirmSheet} from '@/pages/chat/components/ChatRoomConfirmSheet';
 import {ToastMessage} from '@/pages/my/components/ToastMessage';
 import {Header} from '@/shared/components/Header';
 import {IcSvgEtc, IcSvgLeft} from '@/shared/icons';
-
-const MOCK_CHAT_ROOM = {
-  photos: [
-    {objectKey: '/profileLogo.png', displayOrder: 1, blurLevel: 0},
-    {objectKey: '/complete.png', displayOrder: 2, blurLevel: 0},
-    {objectKey: '/noPeople.png', displayOrder: 3, blurLevel: 50},
-    {objectKey: '/completeOnboarding.png', displayOrder: 4, blurLevel: 50},
-    {objectKey: '/report.png', displayOrder: 5, blurLevel: 50},
-  ],
-};
 
 export const ChatRoom = () => {
   const {roomId: roomIdParam} = useParams();
@@ -38,9 +28,20 @@ export const ChatRoom = () => {
 
 const ChatRoomContent = ({roomId}: {roomId: number}) => {
   const navigate = useNavigate();
-  const [message, setMessage] = useState('');
-  const [isRevealPreviewOpen, setIsRevealPreviewOpen] = useState(false);
   const chat = useChatRoomQuery(roomId);
+  const composer = useChatComposer({
+    roomId,
+    memberId: chat.memberId,
+    canSend: chat.room?.roomStatus === 'ACTIVE',
+    latestMessageId: chat.messages.at(-1)?.messageId ?? 0,
+  });
+  const realtime = useChatRoomRealtime({
+    roomId,
+    memberId: chat.memberId,
+    roomStatus: chat.room?.roomStatus,
+    onMessage: composer.handleMessage,
+    onError: composer.handleError,
+  });
   const {
     actionMenuRef,
     isActionMenuOpen,
@@ -51,7 +52,7 @@ const ChatRoomContent = ({roomId}: {roomId: number}) => {
     openAction,
     closeAction,
     confirmAction,
-  } = useChatRoomActions(() => setMessage(''));
+  } = useChatRoomActions(() => composer.setMessage(''));
   const {
     memberId,
     partnerNickname,
@@ -66,9 +67,6 @@ const ChatRoomContent = ({roomId}: {roomId: number}) => {
     fadeDuration,
   } = toast;
   const isInputDisabled = isBlocked || room?.roomStatus !== 'ACTIVE';
-  const previewPhoto = MOCK_CHAT_ROOM.photos.find(
-    (photo) => photo.displayOrder === publicPhotoCount
-  );
 
   if (chat.isLoading || memberId === null) {
     return (
@@ -114,16 +112,14 @@ const ChatRoomContent = ({roomId}: {roomId: number}) => {
           rightItem={<IcSvgEtc className='size-[3.2rem] text-gray-800' />}
           onClickRight={toggleMenu}
         />
-        <ChatImageList photos={MOCK_CHAT_ROOM.photos} />
-        <div className='flex justify-end px-[2rem] pt-[0.8rem]'>
-          <button
-            type='button'
-            disabled={!previewPhoto || isInputDisabled}
-            onClick={() => setIsRevealPreviewOpen(true)}
-            className='border-primary text-caption2-12sb text-primary rounded-full border px-[1.2rem] py-[0.5rem] disabled:opacity-50'>
-            이벤트 미리보기
-          </button>
-        </div>
+        <ChatPhotoSection
+          key={`${memberId}-${roomId}`}
+          roomId={roomId}
+          memberId={memberId}
+          roomStatus={isBlocked ? 'BLOCKED' : room?.roomStatus}
+          progressStatus={room?.progressStatus}
+          partnerNickname={partnerNickname}
+        />
         {isActionMenuOpen && (
           <ChatRoomActionMenu
             onReport={() => openAction('report')}
@@ -142,6 +138,7 @@ const ChatRoomContent = ({roomId}: {roomId: number}) => {
           isFetchingNextPage={messagesQuery.isFetchingNextPage}
           isFetchNextPageError={messagesQuery.isFetchNextPageError}
           onLoadPreviousMessages={messagesQuery.fetchNextPage}
+          onReadLatest={realtime.markAsRead}
         />
 
         {isInputDisabled && (
@@ -151,6 +148,27 @@ const ChatRoomContent = ({roomId}: {roomId: number}) => {
         )}
 
         <div className='relative'>
+          {!isInputDisabled && !realtime.isConnected && (
+            <p
+              role='status'
+              className='text-body1-15r px-[2rem] py-[0.8rem] text-center text-gray-600'>
+              대화 연결을 확인하고 있어요. 잠시만 기다려 주세요.
+            </p>
+          )}
+          {composer.error && (
+            <p
+              role='alert'
+              className='text-body1-15r px-[2rem] py-[0.8rem] text-center text-gray-600'>
+              {composer.error}
+            </p>
+          )}
+          {composer.isSending && (
+            <p
+              role='status'
+              className='text-body1-15r px-[2rem] py-[0.8rem] text-center text-gray-600'>
+              메시지를 보내고 있어요.
+            </p>
+          )}
           {isToastVisible && (
             <div
               className={`absolute right-[1.2rem] bottom-[8.2rem] left-[1.2rem] z-10 transition-opacity ${
@@ -162,10 +180,21 @@ const ChatRoomContent = ({roomId}: {roomId: number}) => {
           )}
 
           <ChatInputBox
-            value={message}
-            onValueChange={setMessage}
-            inputProps={{disabled: isInputDisabled}}
-            submitDisabled
+            value={composer.message}
+            onValueChange={composer.setMessage}
+            inputProps={{
+              disabled: isInputDisabled,
+              onKeyDown: (event) => {
+                if (event.key === 'Enter' && event.nativeEvent.isComposing)
+                  event.preventDefault();
+              },
+            }}
+            submitDisabled={
+              isInputDisabled ||
+              !realtime.isConnected ||
+              composer.isSending ||
+              !composer.message.trim()
+            }
             placeholder={
               isInputDisabled
                 ? '메시지를 보낼 수 없어요'
@@ -173,21 +202,13 @@ const ChatRoomContent = ({roomId}: {roomId: number}) => {
             }
             onSubmit={(event) => {
               event.preventDefault();
+              if (!isInputDisabled) composer.sendMessage();
             }}
           />
         </div>
       </main>
 
       <ChatReportSheet open={activeAction === 'report'} onClose={closeAction} />
-      {isRevealPreviewOpen && previewPhoto && (
-        <PhotoRevealEvent
-          photoUrl={previewPhoto.objectKey}
-          displayOrder={previewPhoto.displayOrder}
-          totalCount={MOCK_CHAT_ROOM.photos.length}
-          partnerNickname={partnerNickname}
-          onClose={() => setIsRevealPreviewOpen(false)}
-        />
-      )}
       <ChatRoomConfirmSheet
         action={
           activeAction === 'block' || activeAction === 'leave'

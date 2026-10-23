@@ -8,6 +8,8 @@ export interface UseChatMessageScrollParams {
   isFetchingNextPage: boolean;
   isFetchNextPageError: boolean;
   onLoadPreviousMessages: () => Promise<unknown>;
+  onReachBottom?: () => void;
+  scrollToMessageId?: number;
 }
 
 export const useChatMessageScroll = ({
@@ -16,11 +18,14 @@ export const useChatMessageScroll = ({
   isFetchingNextPage,
   isFetchNextPageError,
   onLoadPreviousMessages,
+  onReachBottom,
+  scrollToMessageId,
 }: UseChatMessageScrollParams) => {
   const containerRef = useRef<HTMLElement>(null);
   const loadPreviousRef = useRef<HTMLDivElement>(null);
   const initializedRef = useRef(false);
   const nearBottomRef = useRef(true);
+  const latestMessageIdRef = useRef<number | undefined>(undefined);
   const loadingRef = useRef(false);
   const scrollSnapshotRef = useRef<{height: number; top: number} | null>(null);
 
@@ -46,22 +51,43 @@ export const useChatMessageScroll = ({
   useLayoutEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+    const hasNewOwnMessage =
+      scrollToMessageId !== undefined &&
+      scrollToMessageId !== latestMessageIdRef.current;
+    latestMessageIdRef.current = messages.at(-1)?.messageId;
 
     if (!initializedRef.current) {
       container.scrollTop = container.scrollHeight;
       initializedRef.current = true;
+      onReachBottom?.();
       return;
     }
 
     const snapshot = scrollSnapshotRef.current;
-    if (snapshot) {
+    if (hasNewOwnMessage) {
+      scrollSnapshotRef.current = null;
+      nearBottomRef.current = true;
+      container.scrollTop = container.scrollHeight;
+      onReachBottom?.();
+    } else if (snapshot) {
       container.scrollTop =
         snapshot.top + container.scrollHeight - snapshot.height;
       scrollSnapshotRef.current = null;
     } else if (nearBottomRef.current) {
       container.scrollTop = container.scrollHeight;
+      onReachBottom?.();
     }
-  }, [messages]);
+  }, [messages, onReachBottom, scrollToMessageId]);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && nearBottomRef.current)
+        onReachBottom?.();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () =>
+      document.removeEventListener('visibilitychange', handleVisibility);
+  }, [onReachBottom]);
 
   useEffect(() => {
     const target = loadPreviousRef.current;
@@ -89,6 +115,7 @@ export const useChatMessageScroll = ({
       nearBottomRef.current =
         container.scrollHeight - container.scrollTop - container.clientHeight <
         80;
+      if (nearBottomRef.current) onReachBottom?.();
     }
   };
 

@@ -3,6 +3,7 @@ import {Navigate, Outlet} from 'react-router-dom';
 
 import {useAuthSession} from '@/shared/auth/useAuthSession';
 import {Button} from '@/shared/components/Button';
+import {ChatRealtimeProvider} from '@/pages/chat/components/ChatRealtimeProvider';
 
 export const PrivateRoute = () => {
   const session = useAuthSession();
@@ -41,5 +42,9 @@ export const PrivateRoute = () => {
     );
   }
 
-  return <Outlet />;
+  return (
+    <ChatRealtimeProvider key={session.memberId}>
+      <Outlet />
+    </ChatRealtimeProvider>
+  );
 };
