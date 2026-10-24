@@ -22,6 +22,9 @@ const CONTENT = {
 interface ChatRoomConfirmSheetProps {
   action: 'block' | 'leave' | null;
   partnerNickname: string;
+  isPending: boolean;
+  canConfirm: boolean;
+  errorMessage: string | null;
   onClose: () => void;
   onConfirm: () => void;
 }
@@ -29,6 +32,9 @@ interface ChatRoomConfirmSheetProps {
 export const ChatRoomConfirmSheet = ({
   action,
   partnerNickname,
+  isPending,
+  canConfirm,
+  errorMessage,
   onClose,
   onConfirm,
 }: ChatRoomConfirmSheetProps) => {
@@ -45,17 +51,26 @@ export const ChatRoomConfirmSheet = ({
         <p className='text-body1-15r mb-[2.8rem] whitespace-pre-line text-gray-600'>
           {content.description}
         </p>
+        {errorMessage && (
+          <p
+            role='alert'
+            className='text-caption2-12sb mb-[1.6rem] text-gray-600'>
+            {errorMessage}
+          </p>
+        )}
         <div className='flex w-full gap-[0.8rem]'>
           <div className='flex-[1]'>
             <Button
               text='취소'
+              disabled={isPending}
               className='border-primary text-button1-14b text-primary h-[5.6rem] rounded-[28px] border'
               onClick={onClose}
             />
           </div>
           <div className='flex-[1.8]'>
             <Button
-              text={content.confirmText}
+              text={isPending ? '처리 중...' : content.confirmText}
+              disabled={!canConfirm}
               aria-label={`${partnerNickname} ${content.confirmText}`}
               className='bg-primary text-button1-14b text-white-800 h-[5.6rem] rounded-[28px] shadow-[0_8px_10px_0_rgba(194,30,86,0.25)]'
               onClick={onConfirm}

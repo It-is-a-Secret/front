@@ -2,7 +2,6 @@ import type {ChatRoomSummary} from '@/pages/chat/api/type';
 import {ChatImageList} from '@/pages/chat/components/ChatImageList';
 import {PhotoRevealEvent} from '@/pages/chat/components/PhotoRevealEvent';
 import {useChatPhotos} from '@/pages/chat/hooks/useChatPhotos';
-import {Button} from '@/shared/components/Button';
 
 interface ChatPhotoSectionProps {
   roomId: number;
@@ -55,21 +54,10 @@ export const ChatPhotoSection = (props: ChatPhotoSectionProps) => {
         />
       )}
       {imagesQuery.isError || hasImageError ? (
-        <div className='flex flex-col items-center gap-[1.2rem] px-[2rem] py-[1.6rem]'>
-          <p role='alert' className='text-caption2-12sb text-gray-600'>
-            사진을 불러오지 못했어요.
-          </p>
-          <div className='w-full max-w-[28rem] [&>div]:h-[5.2rem]'>
-            <Button
-              text={imagesQuery.isFetching ? '확인 중...' : '다시 시도'}
-              disabled={imagesQuery.isFetching}
-              onClick={refresh}
-            />
-          </div>
-        </div>
-      ) : photos.length === 0 ? (
-        <p className='text-caption2-12sb px-[2rem] py-[1.6rem] text-center text-gray-600'>
-          아직 표시할 상대방 사진이 없어요.
+        <p
+          role='alert'
+          className='text-caption2-12sb px-[2rem] py-[1.6rem] text-center text-gray-600'>
+          사진을 불러오지 못했어요.
         </p>
       ) : null}
       {currentReveal && (

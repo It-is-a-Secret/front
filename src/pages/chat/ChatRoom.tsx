@@ -11,7 +11,6 @@ import {useChatComposer} from '@/pages/chat/hooks/useChatComposer';
 import {useChatRoomRealtime} from '@/pages/chat/hooks/useChatRoomRealtime';
 import {ChatRoomState} from '@/pages/chat/components/ChatRoomState';
 import {ChatRoomConfirmSheet} from '@/pages/chat/components/ChatRoomConfirmSheet';
-import {ToastMessage} from '@/pages/my/components/ToastMessage';
 import {Header} from '@/shared/components/Header';
 import {IcSvgEtc, IcSvgLeft} from '@/shared/icons';
 
@@ -46,13 +45,14 @@ const ChatRoomContent = ({roomId}: {roomId: number}) => {
     actionMenuRef,
     isActionMenuOpen,
     activeAction,
-    isBlocked,
-    toast,
+    isPending: isActionPending,
+    canConfirm,
+    errorMessage: actionErrorMessage,
     toggleMenu,
     openAction,
     closeAction,
     confirmAction,
-  } = useChatRoomActions(() => composer.setMessage(''));
+  } = useChatRoomActions({roomId, partnerId: chat.room?.partnerId});
   const {
     memberId,
     partnerNickname,
@@ -61,12 +61,7 @@ const ChatRoomContent = ({roomId}: {roomId: number}) => {
     messages,
     messagesQuery,
   } = chat;
-  const {
-    isVisible: isToastVisible,
-    isLeaving: isToastLeaving,
-    fadeDuration,
-  } = toast;
-  const isInputDisabled = isBlocked || room?.roomStatus !== 'ACTIVE';
+  const isInputDisabled = isActionPending || room?.roomStatus !== 'ACTIVE';
 
   if (chat.isLoading || memberId === null) {
     return (
@@ -116,7 +111,7 @@ const ChatRoomContent = ({roomId}: {roomId: number}) => {
           key={`${memberId}-${roomId}`}
           roomId={roomId}
           memberId={memberId}
-          roomStatus={isBlocked ? 'BLOCKED' : room?.roomStatus}
+          roomStatus={room?.roomStatus}
           progressStatus={room?.progressStatus}
           partnerNickname={partnerNickname}
         />
@@ -169,16 +164,6 @@ const ChatRoomContent = ({roomId}: {roomId: number}) => {
               메시지를 보내고 있어요.
             </p>
           )}
-          {isToastVisible && (
-            <div
-              className={`absolute right-[1.2rem] bottom-[8.2rem] left-[1.2rem] z-10 transition-opacity ${
-                isToastLeaving ? 'opacity-0' : 'opacity-100'
-              }`}
-              style={{transitionDuration: `${fadeDuration}ms`}}>
-              <ToastMessage message='차단이 완료되었어요' />
-            </div>
-          )}
-
           <ChatInputBox
             value={composer.message}
             onValueChange={composer.setMessage}
@@ -208,7 +193,12 @@ const ChatRoomContent = ({roomId}: {roomId: number}) => {
         </div>
       </main>
 
-      <ChatReportSheet open={activeAction === 'report'} onClose={closeAction} />
+      <ChatReportSheet
+        open={activeAction === 'report'}
+        roomId={roomId}
+        partnerId={room?.partnerId}
+        onClose={closeAction}
+      />
       <ChatRoomConfirmSheet
         action={
           activeAction === 'block' || activeAction === 'leave'
@@ -216,6 +206,9 @@ const ChatRoomContent = ({roomId}: {roomId: number}) => {
             : null
         }
         partnerNickname={partnerNickname}
+        isPending={isActionPending}
+        canConfirm={canConfirm}
+        errorMessage={actionErrorMessage}
         onClose={closeAction}
         onConfirm={confirmAction}
       />

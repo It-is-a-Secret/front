@@ -35,7 +35,7 @@ export interface paths {
         put?: never;
         /**
          * 신고 접수
-         * @description 대상 회원을 신고한다. chatRoomId가 있으면 채팅방 신고, 없으면 프로필 신고. 자기 신고는 400, 대상/방 없음은 404, 동일 대상·방 중복 신고는 409. 채팅방 신고가 고유 신고자 3명에 도달하면 방이 동결(REPORTED)된다.
+         * @description 대상 회원을 신고한다. chatRoomId가 있으면 채팅방 신고, 없으면 프로필 신고. reason은 화면 신고 항목 7개와 1:1로 대응하며, 목록에 없는 값은 400(CLIENT_ERROR_400_INVALID_REQUEST_BODY), 화면에서 빠진 과거 사유(HATE_SPEECH·PHOTO_THEFT)는 400(REPORT_400_REASON_NOT_SELECTABLE). 자기 신고는 400, 대상/방 없음은 404, 동일 대상·방 중복 신고는 409. 채팅방 신고가 고유 신고자 3명에 도달하면 방이 동결(REPORTED)된다.
          */
         post: operations["report"];
         delete?: never;
@@ -579,8 +579,12 @@ export interface components {
             targetMemberId: number;
             /** Format: int64 */
             chatRoomId?: number;
-            /** @enum {string} */
-            reason: "SPAM" | "INAPPROPRIATE_CHAT" | "SEXUAL_HARASSMENT" | "HATE_SPEECH" | "PHOTO_THEFT" | "ETC";
+            /**
+             * @description 신고 사유. 화면 항목과 1:1 대응 — INAPPROPRIATE_CHAT=불쾌한 대화, SEXUAL_HARASSMENT=성적인 내용, COERCIVE_MEETING=만남/약속 강요, DANGEROUS_PERSON=위험한 사람, FINANCIAL_OR_PERSONAL_INFO_REQUEST=금전·개인정보 요구, SPAM=광고·홍보, ETC=기타. 목록에 없는 값은 400.
+             * @example INAPPROPRIATE_CHAT
+             * @enum {string}
+             */
+            reason: "INAPPROPRIATE_CHAT" | "SEXUAL_HARASSMENT" | "COERCIVE_MEETING" | "DANGEROUS_PERSON" | "FINANCIAL_OR_PERSONAL_INFO_REQUEST" | "SPAM" | "ETC";
             detail?: string;
         };
         VerifySchoolEmailRequest: {
@@ -807,19 +811,47 @@ export interface components {
             matched?: boolean;
         };
         ChatRoomSummaryResponse: {
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description 채팅방 id
+             * @example 1
+             */
             roomId?: number;
-            /** @enum {string} */
+            /**
+             * @description 방 상태
+             * @enum {string}
+             */
             roomStatus?: "ACTIVE" | "CLOSED" | "BLOCKED" | "REPORTED";
-            /** @enum {string} */
+            /**
+             * @description 사진 공개 진행 단계
+             * @enum {string}
+             */
             progressStatus?: "MATCHED" | "PHOTO_REVEAL_STEP_1" | "PHOTO_REVEAL_STEP_2" | "PHOTO_REVEAL_STEP_3" | "PHOTO_REVEAL_STEP_4" | "COMPLETED";
+            /**
+             * Format: int64
+             * @description 1:1 상대 회원 id. 신고·차단 요청의 targetMemberId로 사용한다. 상대가 메시지를 보낸 적이 없거나 방을 나간 뒤에도 내려간다.
+             * @example 1001
+             */
+            partnerId?: number;
+            /** @description 상대 닉네임(온보딩 전이면 null) */
             partnerNickname?: string;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description 마지막 메시지 id(메시지가 없으면 null)
+             */
             lastMessageId?: number;
+            /** @description 마지막 메시지 미리보기(메시지가 없으면 null) */
             lastMessage?: components["schemas"]["ChatMessageResponse"];
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description 상대가 마지막으로 읽은 메시지 id(아직 안 읽었으면 null)
+             */
             partnerLastReadMessageId?: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description 내가 안 읽은 메시지 수
+             * @example 3
+             */
             unreadCount?: number;
         };
         DataResponseListChatRoomSummaryResponse: {
