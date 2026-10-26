@@ -2,6 +2,7 @@ import {useNavigate} from 'react-router-dom';
 
 import {NoticeMessage} from '@/pages/my/components/NoticeMessage';
 import {ProfileSettingItem} from '@/pages/my/components/ProfileSettingItem';
+import {ToastMessage} from '@/pages/my/components/ToastMessage';
 import {ProfileEditSheet} from '@/pages/my/features/profile-edit-sheet/ProfileEditSheet';
 import {useProfileEdit} from '@/pages/my/hooks/useProfileEdit';
 import {BottomNavBar} from '@/shared/components/BottomNavBar';
@@ -57,7 +58,7 @@ export const ProfileEditPage = () => {
             <div className='bg-white-800 divide-y divide-gray-200 overflow-hidden rounded-[16px] border border-gray-200'>
               <ProfileSettingItem
                 label='MBTI'
-                value={edit.profile.mbti}
+                value={edit.profile.mbti ?? '모름'}
                 onClick={() => edit.openSheet('mbti')}
               />
               <ProfileSettingItem
@@ -68,7 +69,7 @@ export const ProfileEditPage = () => {
           </div>
 
           <div className='mt-[2.4rem] flex flex-col gap-[0.8rem]'>
-            <h2 className='text-body1-15'>사진 관리</h2>
+            <h2 className='text-body1-15r'>사진 관리</h2>
             <div className='bg-white-800 divide-y divide-gray-200 overflow-hidden rounded-[16px] border border-gray-200'>
               <ProfileSettingItem
                 label='사진 업로드 관리'
@@ -93,6 +94,10 @@ export const ProfileEditPage = () => {
           categories={edit.categories}
           selectedTagIds={edit.selectedTagIds}
           photos={edit.photos}
+          editStatus={edit.profile.profileEdit}
+          isSaving={edit.isSaving}
+          onSave={edit.saveProfile}
+          onNotify={edit.notify}
           isKeywordsPending={edit.keywordsQuery.isPending}
           isKeywordsError={
             edit.keywordsQuery.isError || !edit.keywordsQuery.data?.data
@@ -105,6 +110,13 @@ export const ProfileEditPage = () => {
           onRetryImages={() => void edit.imagesQuery.refetch()}
           onClose={edit.closeSheet}
         />
+      )}
+      {edit.toast.isVisible && (
+        <div
+          className={`fixed right-[2rem] bottom-[8.2rem] left-[2rem] z-[80] mx-auto max-w-[39rem] transition-opacity ${edit.toast.isLeaving ? 'opacity-0' : 'opacity-100'}`}
+          style={{transitionDuration: `${edit.toast.fadeDuration}ms`}}>
+          <ToastMessage message={edit.message} />
+        </div>
       )}
     </main>
   );

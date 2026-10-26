@@ -4,9 +4,12 @@ import {MbtiResetSheet} from '@/pages/my/features/profile-edit-sheet/MbtiResetSh
 import {NicknameResetSheet} from '@/pages/my/features/profile-edit-sheet/NicknameResetSheet';
 import {PhotoUploadResetSheet} from '@/pages/my/features/profile-edit-sheet/PhotoUploadResetSheet';
 import type {
+  ProfileChanges,
   ProfileInterestCategory,
   ProfilePhoto,
 } from '@/pages/my/model/profile-edit';
+import {getProfileChangeNote} from '@/pages/my/model/profile-edit';
+import type {components} from '@/shared/types/schema';
 import type {MbtiType} from '@/pages/onboarding/constants/constants';
 import {Button} from '@/shared/components/Button';
 import {Header} from '@/shared/components/Header';
@@ -26,6 +29,10 @@ interface ProfileEditSheetProps {
   categories: ProfileInterestCategory[];
   selectedTagIds: number[];
   photos: ProfilePhoto[];
+  editStatus?: components['schemas']['ProfileEditStatusResponse'];
+  isSaving: boolean;
+  onSave: (changes: ProfileChanges) => Promise<void>;
+  onNotify: (message: string) => void;
   isKeywordsPending: boolean;
   isKeywordsError: boolean;
   isImagesPending: boolean;
@@ -42,6 +49,10 @@ export const ProfileEditSheet = ({
   categories,
   selectedTagIds,
   photos,
+  editStatus,
+  isSaving,
+  onSave,
+  onNotify,
   isKeywordsPending,
   isKeywordsError,
   isImagesPending,
@@ -53,6 +64,18 @@ export const ProfileEditSheet = ({
   if (!type) {
     return null;
   }
+
+  const status =
+    type === 'nickname'
+      ? editStatus?.nickName
+      : type === 'mbti'
+        ? editStatus?.mbti
+        : editStatus?.keywords;
+  const saveProps = {
+    isSaving,
+    canSave: status?.changeable === true,
+    changeNote: getProfileChangeNote(status),
+  };
 
   const renderContent = () => {
     const needsImages = type === 'photoUpload' || type === 'blurStrength';
@@ -97,11 +120,26 @@ export const ProfileEditSheet = ({
     }
 
     if (type === 'nickname') {
-      return <NicknameResetSheet nickname={nickname} onClose={onClose} />;
+      return (
+        <NicknameResetSheet
+          nickname={nickname}
+          onClose={onClose}
+          {...saveProps}
+          onSave={(nickName) => onSave({nickName})}
+          onNotify={onNotify}
+        />
+      );
     }
 
     if (type === 'mbti') {
-      return <MbtiResetSheet mbti={mbti} onClose={onClose} />;
+      return (
+        <MbtiResetSheet
+          mbti={mbti}
+          onClose={onClose}
+          {...saveProps}
+          onSave={(mbti) => onSave({mbti})}
+        />
+      );
     }
 
     if (type === 'interests') {
@@ -109,6 +147,8 @@ export const ProfileEditSheet = ({
         <InterestCategoryResetSheet
           categories={categories}
           selectedTagIds={selectedTagIds}
+          {...saveProps}
+          onSave={(keywordTagIds) => onSave({keywordTagIds})}
           onClose={onClose}
         />
       );

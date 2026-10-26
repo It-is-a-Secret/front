@@ -12,10 +12,21 @@ import {IcSvgLeft} from '@/shared/icons';
 interface MbtiResetSheetProps {
   mbti?: MbtiType;
   onClose: () => void;
+  isSaving: boolean;
+  canSave: boolean;
+  changeNote: string;
+  onSave: (mbti: MbtiType | null) => Promise<void>;
 }
 
-export const MbtiResetSheet = ({mbti, onClose}: MbtiResetSheetProps) => {
-  const [selectedMbti, setSelectedMbti] = useState(mbti);
+export const MbtiResetSheet = ({
+  mbti,
+  onClose,
+  isSaving,
+  canSave,
+  changeNote,
+  onSave,
+}: MbtiResetSheetProps) => {
+  const [selectedMbti, setSelectedMbti] = useState(mbti ?? undefined);
 
   return (
     <section className='flex min-h-dvh flex-col'>
@@ -38,6 +49,7 @@ export const MbtiResetSheet = ({mbti, onClose}: MbtiResetSheetProps) => {
                 mbti={mbti}
                 isSelected={selectedMbti === mbti}
                 aria-pressed={selectedMbti === mbti}
+                disabled={isSaving || !canSave}
                 onClick={() => setSelectedMbti(mbti)}
               />
             ))}
@@ -45,7 +57,14 @@ export const MbtiResetSheet = ({mbti, onClose}: MbtiResetSheetProps) => {
         </div>
 
         <div className='relative mt-auto pb-[2rem]'>
-          <Button text='저장하기' disabled />
+          <Button
+            text={isSaving ? '저장 중...' : '저장하기'}
+            description={changeNote}
+            disabled={
+              isSaving || !canSave || selectedMbti === (mbti ?? undefined)
+            }
+            onClick={() => void onSave(selectedMbti ?? null)}
+          />
         </div>
       </div>
     </section>

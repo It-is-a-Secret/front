@@ -6,6 +6,9 @@ import {
   getProfileBlurLabel,
   getProfileInterestCategories,
   getProfilePhotos,
+  buildProfileUpdateRequest,
+  getProfileChangeNote,
+  isValidNickname,
 } from '../src/pages/my/model/profile-edit';
 
 test('uses catalog order and IDs even when category labels are identical', () => {
@@ -62,15 +65,20 @@ test('keeps selected tags that have been removed from the active catalog', () =>
   });
 });
 
-test('sorts photos without treating private object keys as browser image URLs', () => {
+test('sorts photos and uses only valid variant URLs for previews', () => {
   const images = [
-    {displayOrder: 3, objectKey: 'originals/member/photo.jpg', blurLevel: 80},
+    {
+      id: 3,
+      displayOrder: 3,
+      variantUrl: 'originals/member/photo.jpg',
+      blurLevel: 80,
+    },
     {
       displayOrder: 1,
-      objectKey: 'https://cdn.example.com/photo.jpg?signature=abc',
+      variantUrl: 'https://cdn.example.com/photo.jpg?signature=abc',
       blurLevel: 60,
     },
-    {displayOrder: 2, objectKey: 'javascript:alert(1)', blurLevel: 70},
+    {displayOrder: 2, variantUrl: 'javascript:alert(1)', blurLevel: 70},
   ];
   const photos = getProfilePhotos(images);
 
@@ -78,7 +86,7 @@ test('sorts photos without treating private object keys as browser image URLs', 
     photos.map((photo) => photo.displayOrder),
     [1, 2, 3]
   );
-  assert.equal(photos[0].previewUrl, images[1].objectKey);
+  assert.equal(photos[0].previewUrl, images[1].variantUrl);
   assert.equal(photos[1].previewUrl, null);
   assert.equal(photos[2].previewUrl, null);
   assert.equal(images[0].displayOrder, 3);
@@ -114,20 +122,20 @@ test('distinguishes empty, unknown, uniform, and per-photo blur settings', () =>
   );
 });
 
-test('keeps registered photos in upload slots even without a preview URL', () => {
+test('restores registered photo previews without inventing original storage keys', () => {
   const slots = createInitialPhotoSlots(
     getProfilePhotos([
-      {displayOrder: 1, objectKey: 'originals/private.jpg', blurLevel: 60},
+      {id: 12, displayOrder: 1, blurLevel: 60, processingStatus: 'PROCESSING'},
       {
         displayOrder: 2,
-        objectKey: 'https://cdn.example.com/photo.jpg',
+        variantUrl: 'https://cdn.example.com/photo.jpg',
         blurLevel: 60,
       },
     ])
   );
 
   assert.equal(slots.length, 5);
-  assert.equal(slots[0].objectKey, 'originals/private.jpg');
+  assert.equal(slots[0].objectKey, undefined);
   assert.equal(slots[0].previewUrl, null);
   assert.equal(slots[1].previewUrl, 'https://cdn.example.com/photo.jpg');
   assert.equal(slots[2].file, null);
@@ -137,4 +145,78 @@ test('keeps registered photos in upload slots even without a preview URL', () =>
     file: null,
     previewUrl: 'existing.png',
   });
+});
+
+const profile = {
+  id: 1,
+  nickName: '기존닉네임',
+  mbti: 'INFP' as const,
+  registrationStatus: 'COMPLETED' as const,
+  keywords: [{tagId: 4}, {tagId: 7}, {tagId: 4}],
+};
+
+test('sends all editable fields while changing only the requested value', () => {
+  const snapshot = structuredClone(profile);
+  assert.deepEqual(buildProfileUpdateRequest(profile, {nickName: '새닉네임'}), {
+    nickName: '새닉네임',
+    mbti: 'INFP',
+    keywordTagIds: [4, 7],
+  });
+  assert.deepEqual(buildProfileUpdateRequest(profile, {mbti: 'ENFP'}), {
+    nickName: '기존닉네임',
+    mbti: 'ENFP',
+    keywordTagIds: [4, 7],
+  });
+  assert.deepEqual(buildProfileUpdateRequest(profile, {keywordTagIds: [8]}), {
+    nickName: '기존닉네임',
+    mbti: 'INFP',
+    keywordTagIds: [8],
+  });
+  assert.deepEqual(profile, snapshot);
+});
+
+test('preserves unknown MBTI as explicit null and supports clearing it', () => {
+  assert.equal(
+    buildProfileUpdateRequest({...profile, mbti: undefined}, {}).mbti,
+    null
+  );
+  assert.equal(buildProfileUpdateRequest(profile, {mbti: null}).mbti, null);
+});
+
+test('never uses profile editing to finish onboarding', () => {
+  assert.throws(() =>
+    buildProfileUpdateRequest(
+      {...profile, registrationStatus: 'VERIFIED'},
+      {mbti: 'ENFP'}
+    )
+  );
+});
+
+test('formats actual server change dates in Korea time without inventing a last change', () => {
+  assert.equal(getProfileChangeNote({changeable: true}), '');
+  const note = getProfileChangeNote({
+    lastChangedAt: '2026-10-01T23:00:00Z',
+    nextChangeableAt: '2026-10-31T23:00:00Z',
+    changeable: false,
+  });
+  assert.match(note, /최근 변경일 2026\. 10\. 02\./);
+  assert.match(note, /다음 변경 가능일 2026\. 11\. 01\./);
+  assert.match(
+    getProfileChangeNote({
+      changeable: true,
+      nextChangeableAt: '2026-10-01T23:00:00Z',
+    }),
+    /다음 변경 가능일 2026\. 10\. 02\./
+  );
+  assert.equal(
+    getProfileChangeNote({lastChangedAt: 'invalid', changeable: true}),
+    ''
+  );
+});
+
+test('nickname format matches the existing 2 to 12 character UI rule', () => {
+  for (const value of ['한글', 'abc123', '가나다라마바123456'])
+    assert.equal(isValidNickname(value), true);
+  for (const value of ['', 'a', 'space name', 'abc!', 'abcdefghijklm'])
+    assert.equal(isValidNickname(value), false);
 });

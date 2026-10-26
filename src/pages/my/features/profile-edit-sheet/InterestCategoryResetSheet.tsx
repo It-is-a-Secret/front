@@ -11,14 +11,25 @@ interface InterestCategoryResetSheetProps {
   categories: ProfileInterestCategory[];
   selectedTagIds: number[];
   onClose: () => void;
+  isSaving: boolean;
+  canSave: boolean;
+  changeNote: string;
+  onSave: (tagIds: number[]) => Promise<void>;
 }
 
 export const InterestCategoryResetSheet = ({
   categories,
   selectedTagIds,
   onClose,
+  isSaving,
+  canSave,
+  changeNote,
+  onSave,
 }: InterestCategoryResetSheetProps) => {
   const [nextSelectedTagIds, setNextSelectedTagIds] = useState(selectedTagIds);
+  const changed =
+    nextSelectedTagIds.length !== selectedTagIds.length ||
+    nextSelectedTagIds.some((id) => !selectedTagIds.includes(id));
 
   const handleToggleInterest = (
     category: ProfileInterestCategory,
@@ -73,6 +84,7 @@ export const InterestCategoryResetSheet = ({
                       value={tag.name}
                       isSelected={nextSelectedTagIds.includes(tag.id)}
                       aria-pressed={nextSelectedTagIds.includes(tag.id)}
+                      disabled={isSaving || !canSave}
                       onClick={() => handleToggleInterest(category, tag.id)}
                     />
                   ))}
@@ -82,7 +94,12 @@ export const InterestCategoryResetSheet = ({
           </div>
         </div>
         <div className='bg-background shrink-0 pb-[2rem]'>
-          <Button text='저장하기' disabled />
+          <Button
+            text={isSaving ? '저장 중...' : '저장하기'}
+            description={changeNote}
+            disabled={isSaving || !canSave || !changed}
+            onClick={() => void onSave(nextSelectedTagIds)}
+          />
         </div>
       </div>
     </section>
