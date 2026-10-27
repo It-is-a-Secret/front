@@ -136,6 +136,8 @@ test('restores registered photo previews without inventing original storage keys
 
   assert.equal(slots.length, 5);
   assert.equal(slots[0].objectKey, undefined);
+  assert.equal(slots[0].imageId, 12);
+  assert.equal(slots[0].blurLevel, 60);
   assert.equal(slots[0].previewUrl, null);
   assert.equal(slots[1].previewUrl, 'https://cdn.example.com/photo.jpg');
   assert.equal(slots[2].file, null);

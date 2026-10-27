@@ -8,6 +8,7 @@ import {
 interface BlurStrengthScrollProps {
   value?: BlurStrength;
   onChange: (strength: BlurStrength) => void;
+  disabled?: boolean;
 }
 
 const ITEM_HEIGHT = 60;
@@ -17,6 +18,7 @@ const CENTER_PADDING = (SCROLL_HEIGHT - ITEM_HEIGHT) / 2;
 export const BlurStrengthScroll = ({
   value,
   onChange,
+  disabled = false,
 }: BlurStrengthScrollProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollTimerRef = useRef<number | null>(null);
@@ -47,9 +49,10 @@ export const BlurStrengthScroll = ({
         window.clearTimeout(scrollTimerRef.current);
       }
     };
-  }, []);
+  }, [disabled]);
 
   const changeToCenteredStrength = () => {
+    if (disabled) return;
     const scrollTop = scrollRef.current?.scrollTop ?? 0;
     const selectedIndex = Math.round(scrollTop / ITEM_HEIGHT);
     const nextStrength = BLUR_STRENGTHS[selectedIndex];
@@ -60,6 +63,7 @@ export const BlurStrengthScroll = ({
   };
 
   const handleScroll = () => {
+    if (disabled) return;
     if (scrollTimerRef.current) {
       window.clearTimeout(scrollTimerRef.current);
     }
@@ -68,6 +72,7 @@ export const BlurStrengthScroll = ({
   };
 
   const handleSelectStrength = (strength: BlurStrength) => {
+    if (disabled) return;
     const selectedIndex = BLUR_STRENGTHS.indexOf(strength);
 
     if (selectedIndex < 0) {
@@ -106,6 +111,7 @@ export const BlurStrengthScroll = ({
               <button
                 key={strength}
                 type='button'
+                disabled={disabled}
                 aria-pressed={isSelected}
                 className={`flex h-[6rem] w-[19.2rem] snap-center items-center justify-center ${
                   isSelected

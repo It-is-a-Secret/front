@@ -10,6 +10,7 @@ interface PhotoUploadSlotProps {
   slot: PhotoSlot;
   index: number;
   className?: string;
+  disabled?: boolean;
   onPhotoChange: (id: string, file: File) => void;
   onPhotoRemove: (id: string) => void;
 }
@@ -18,15 +19,19 @@ export const PhotoUploadSlot = ({
   slot,
   index,
   className = '',
+  disabled = false,
   onPhotoChange,
   onPhotoRemove,
 }: PhotoUploadSlotProps) => {
   const [failedPreviewUrl, setFailedPreviewUrl] = useState<string | null>(null);
-  const hasPhoto = Boolean(slot.previewUrl || slot.objectKey);
+  const hasPhoto = Boolean(
+    slot.file || slot.previewUrl || slot.objectKey || slot.imageId !== undefined
+  );
   const {ref, isDragging} = useSortable({
     id: slot.id,
     index,
     type: 'photo',
+    disabled,
   });
 
   const inputId = `photo-input-${slot.id}`;
@@ -50,7 +55,13 @@ export const PhotoUploadSlot = ({
         ) : hasPhoto ? (
           <span className='flex flex-col items-center gap-[0.6rem] text-gray-400'>
             <IcSvgImage className='size-[2.4rem]' />
-            <span className='text-caption1-12r'>미리보기 없음</span>
+            <span className='text-caption1-12r'>
+              {slot.processingStatus === 'PROCESSING'
+                ? '처리 중'
+                : slot.processingStatus === 'FAILED'
+                  ? '처리 실패'
+                  : '미리보기 없음'}
+            </span>
           </span>
         ) : (
           <IcSvgPlus className='size-[2.4rem]' />
@@ -60,6 +71,7 @@ export const PhotoUploadSlot = ({
       {hasPhoto && (
         <button
           type='button'
+          disabled={disabled}
           aria-label='사진 삭제'
           className='absolute top-[1rem] right-[1rem] z-10 flex items-center justify-center rounded-full text-black'
           onClick={(event) => {
@@ -74,6 +86,7 @@ export const PhotoUploadSlot = ({
       <input
         id={inputId}
         type='file'
+        disabled={disabled}
         accept='image/jpeg,image/png,image/heic,image/heif'
         className='sr-only'
         onChange={(event) => {

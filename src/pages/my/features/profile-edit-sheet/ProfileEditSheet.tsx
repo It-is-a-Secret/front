@@ -10,7 +10,11 @@ import type {
 } from '@/pages/my/model/profile-edit';
 import {getProfileChangeNote} from '@/pages/my/model/profile-edit';
 import type {components} from '@/shared/types/schema';
-import type {MbtiType} from '@/pages/onboarding/constants/constants';
+import type {
+  MbtiType,
+  BlurStrength,
+} from '@/pages/onboarding/constants/constants';
+import type {PhotoSlot} from '@/pages/onboarding/hooks/usePhotoUploadSlots';
 import {Button} from '@/shared/components/Button';
 import {Header} from '@/shared/components/Header';
 import {IcSvgLeft} from '@/shared/icons';
@@ -32,6 +36,8 @@ interface ProfileEditSheetProps {
   editStatus?: components['schemas']['ProfileEditStatusResponse'];
   isSaving: boolean;
   onSave: (changes: ProfileChanges) => Promise<void>;
+  onSavePhotos: (slots: PhotoSlot[]) => Promise<void>;
+  onSaveBlur: (strength: BlurStrength) => Promise<void>;
   onNotify: (message: string) => void;
   isKeywordsPending: boolean;
   isKeywordsError: boolean;
@@ -52,6 +58,8 @@ export const ProfileEditSheet = ({
   editStatus,
   isSaving,
   onSave,
+  onSavePhotos,
+  onSaveBlur,
   onNotify,
   isKeywordsPending,
   isKeywordsError,
@@ -155,10 +163,24 @@ export const ProfileEditSheet = ({
     }
 
     if (type === 'photoUpload') {
-      return <PhotoUploadResetSheet photos={photos} onClose={onClose} />;
+      return (
+        <PhotoUploadResetSheet
+          photos={photos}
+          onClose={onClose}
+          isSaving={isSaving}
+          onSave={onSavePhotos}
+        />
+      );
     }
 
-    return <BlurStrengthResetSheet photos={photos} onClose={onClose} />;
+    return (
+      <BlurStrengthResetSheet
+        photos={photos}
+        onClose={onClose}
+        isSaving={isSaving}
+        onSave={onSaveBlur}
+      />
+    );
   };
 
   return (

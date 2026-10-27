@@ -13,11 +13,15 @@ import {IcSvgLeft} from '@/shared/icons';
 interface BlurStrengthResetSheetProps {
   photos: ProfilePhoto[];
   onClose: () => void;
+  isSaving: boolean;
+  onSave: (strength: BlurStrength) => Promise<void>;
 }
 
 export const BlurStrengthResetSheet = ({
   photos,
   onClose,
+  isSaving,
+  onSave,
 }: BlurStrengthResetSheetProps) => {
   const [selectedBlurStrength, setSelectedBlurStrength] = useState<
     BlurStrength | undefined
@@ -48,10 +52,23 @@ export const BlurStrengthResetSheet = ({
           <BlurStrengthScroll
             value={selectedBlurStrength}
             onChange={setSelectedBlurStrength}
+            disabled={isSaving}
           />
         </div>
         <div className='relative mt-auto pb-[2rem]'>
-          <Button text='저장하기' disabled />
+          <Button
+            text={isSaving ? '저장 중...' : '저장하기'}
+            disabled={
+              isSaving ||
+              photos.length === 0 ||
+              selectedBlurStrength === undefined ||
+              photos.every((photo) => photo.blurLevel === selectedBlurStrength)
+            }
+            onClick={() => {
+              if (selectedBlurStrength !== undefined)
+                void onSave(selectedBlurStrength);
+            }}
+          />
         </div>
       </div>
     </section>

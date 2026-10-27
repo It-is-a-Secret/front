@@ -23,9 +23,12 @@ const checkNickname = (nickName: string) =>
     })
     .json<NicknameAvailabilityResponse>();
 
+const withdraw = () => api.delete(API_ENDPOINT.profile.me);
+
 export const MY_MUTATION_OPTIONS = {
   UPDATE_PROFILE: () => mutationOptions({mutationFn: updateProfile}),
   CHECK_NICKNAME: () => mutationOptions({mutationFn: checkNickname}),
+  WITHDRAW: () => mutationOptions({mutationFn: withdraw}),
 };
 
 export const MY_QUERY_OPTIONS = {

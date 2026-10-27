@@ -75,7 +75,7 @@ export interface paths {
         put?: never;
         /**
          * 학교 이메일 인증 코드 발송
-         * @description 안양대학교 이메일(@gs.anyang.ac.kr)로 6자리 인증 코드를 발송한다.
+         * @description 안양대학교 이메일(@gs.anyang.ac.kr)로 6자리 인증 코드를 발송한다. 이메일은 공백을 지우고 소문자로 비교·저장한다. 다른 회원이 사용 중이면 409 SCHOOL_EMAIL_DUPLICATED, 탈퇴 후 30일이 지나지 않은 회원의 이메일이면 409 REJOIN_RESTRICTED다.
          */
         post: operations["sendSchoolEmailCode"];
         delete?: never;
@@ -118,8 +118,14 @@ export interface paths {
         get: operations["getMyImages"];
         put?: never;
         /**
-         * 피드 이미지 메타데이터 저장 (full-replace)
-         * @description 프론트가 원본 S3 업로드를 마친 뒤 피드 이미지 메타데이터를 저장한다. 요청 목록을 피드 사진 전체 집합으로 보는 full-replace 방식이며(기존 DB 행 대체, S3 객체 즉시 삭제 안 함), 원본 key로부터 variant_key를 계산하고 processing_status=PROCESSING으로 시작한다. 인증 주체에서 피드를 도출하므로 feedId를 받지 않는다.
+         * 피드 이미지 저장 (full-replace, 기존·신규 혼합)
+         * @description 저장 후 피드에 남을 사진 전체 목록(1~5장)을 보낸다. 각 항목은 기존 사진이면 관리 조회 응답의 id, 새로 업로드한 사진이면 Presigned 발급 응답의 originalKey를 objectKey로 보내며, 둘 중 정확히 하나만 지정한다. 현재 피드에 있지만 목록에 없는 사진은 삭제된다(S3 객체는 즉시 삭제하지 않음).
+         *
+         *     - 기존 사진 유지·재정렬: id와 새 displayOrder. ID·블러본 URL·처리 상태가 그대로 유지된다.
+         *     - 기존 사진 블러 변경: id와 다른 blurLevel. 서버가 원본을 새 key로 복사해 블러본을 다시 만들며, 응답은 새 variantUrl과 PROCESSING이다. 별도 재처리 API는 없다. blurLevel 생략 시 현재 값 유지.
+         *     - 새 사진: objectKey. 원본 업로드가 끝난 key여야 하며 PROCESSING으로 생성된다. blurLevel은 Presigned 발급 때 지정한 값이 적용되고, 보낸다면 그 값과 같아야 한다(FEED_IMAGE_400_BLUR_LEVEL_MISMATCH).
+         *
+         *     인증 주체에서 피드를 도출하므로 feedId를 받지 않는다. 다른 회원 사진 id는 FEED_IMAGE_404_NOT_FOUND, id/objectKey 조합 오류는 FEED_IMAGE_400_INVALID_REFERENCE, 같은 사진 중복 지정은 FEED_IMAGE_400_DUPLICATE_REFERENCE, 업로드되지 않은 objectKey는 FEED_IMAGE_400_ORIGINAL_NOT_UPLOADED다.
          */
         post: operations["saveImages"];
         delete?: never;
@@ -274,7 +280,17 @@ export interface paths {
         get: operations["getMyProfile"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * 회원 탈퇴
+         * @description 인증 회원 본인을 탈퇴시킨다. 요청 본문은 없고 성공 시 204와 함께 refreshToken 쿠키를 만료(Max-Age=0)시킨다.
+         *
+         *     - 계정과 프로필이 비활성화되어 탐색·공개 피드·카드 상세·채팅 개설 대상에서 빠진다(회원 행·피드·사진·메시지·신고/차단 이력은 삭제하지 않음).
+         *     - 참여 중인 대화는 종료된다(ACTIVE·BLOCKED 방은 CLOSED, 신고 검토 중인 REPORTED 방은 상태 유지). 탈퇴 회원은 모든 방에서 나가며, 상대는 지난 이력만 볼 수 있고 새 메시지를 보낼 수 없다.
+         *     - 서버의 Refresh Token과 진행 중인 학교 이메일 인증 코드를 지운다. 기존 Access Token으로 보호 API를 호출하거나 STOMP에 연결하면 403 MEMBER_403_INACTIVE다(다시 탈퇴를 요청해도 같다).
+         *     - 탈퇴 후 30일 동안 같은 카카오 계정으로 로그인하거나 같은 학교 이메일을 인증하면 409 MEMBER_409_REJOIN_RESTRICTED이며, 메시지에 가입 가능 시각이 담긴다. 정확히 30일이 지난 시점부터 새 회원으로 다시 가입할 수 있다(학교 인증·온보딩부터 다시).
+         *     - 신고 누적으로 정지된 회원은 탈퇴할 수 없다(403 MEMBER_403_INACTIVE).
+         */
+        delete: operations["withdraw"];
         options?: never;
         head?: never;
         patch?: never;
@@ -606,14 +622,53 @@ export interface components {
             gender: "MALE" | "FEMALE";
             keywordTagIds?: number[];
         };
-        /** @description 피드 사진 저장 요청의 사진 한 장 */
+        /** @description 피드 사진 저장 요청의 사진 한 장. 기존 사진은 id, 새 사진은 objectKey 중 정확히 하나로 식별한다. */
         FeedImageSaveItem: {
+            /**
+             * Format: int64
+             * @description 유지할 기존 사진 id(GET /api/feeds/me/images 응답의 id). objectKey와 함께 보낼 수 없다.
+             * @example 10
+             */
+            id?: number;
+            /**
+             * @description 새로 업로드한 사진의 원본 key(Presigned 발급 응답의 originalKey). id와 함께 보낼 수 없다.
+             * @example originals/100/11111111-1111-1111-1111-111111111111.png
+             */
             objectKey?: string;
-            /** Format: int32 */
+            /**
+             * Format: int32
+             * @description 노출 순서(1~5). 요청 안에서 중복될 수 없다.
+             * @example 1
+             */
             displayOrder: number;
-            /** Format: int32 */
+            /**
+             * Format: int32
+             * @description 블러 강도(50~100). 기존 사진은 생략 시 현재 값 유지(바뀌면 서버가 블러본 재생성). 새 사진은 Presigned 발급 때 지정한 값이 적용되며, 보낸다면 그 값과 같아야 한다.
+             * @example 80
+             */
             blurLevel?: number;
         };
+        /**
+         * @description 피드 사진 저장 요청. images는 저장 후 피드에 남을 사진의 전체 목록이다.
+         * @example {
+         *       "images": [
+         *         {
+         *           "id": 10,
+         *           "displayOrder": 1
+         *         },
+         *         {
+         *           "id": 12,
+         *           "displayOrder": 2,
+         *           "blurLevel": 90
+         *         },
+         *         {
+         *           "objectKey": "originals/100/11111111-1111-1111-1111-111111111111.png",
+         *           "displayOrder": 3,
+         *           "blurLevel": 80
+         *         }
+         *       ]
+         *     }
+         */
         FeedImageSaveRequest: {
             images?: components["schemas"]["FeedImageSaveItem"][];
         };
@@ -1224,6 +1279,24 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["DataResponseMemberProfileResponse"];
                 };
+            };
+        };
+    };
+    withdraw: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

@@ -1,6 +1,8 @@
 import {DragDropProvider} from '@dnd-kit/react';
 
 import type {ProfilePhoto} from '@/pages/my/model/profile-edit';
+import {hasProfilePhotoChanges} from '@/pages/my/model/profile-images';
+import type {PhotoSlot} from '@/pages/onboarding/hooks/usePhotoUploadSlots';
 import {PhotoUploadSlot} from '@/pages/onboarding/components/PhotoUploadSlot';
 import {
   PHOTO_SLOT_COUNT,
@@ -13,11 +15,15 @@ import {IcSvgLeft} from '@/shared/icons';
 interface PhotoUploadResetSheetProps {
   photos: ProfilePhoto[];
   onClose: () => void;
+  isSaving: boolean;
+  onSave: (slots: PhotoSlot[]) => Promise<void>;
 }
 
 export const PhotoUploadResetSheet = ({
   photos,
   onClose,
+  isSaving,
+  onSave,
 }: PhotoUploadResetSheetProps) => {
   const {
     photoSlots,
@@ -52,13 +58,17 @@ export const PhotoUploadResetSheet = ({
             </p>
           </div>
 
-          <DragDropProvider onDragEnd={handlePhotoSort}>
+          <DragDropProvider
+            onDragEnd={(event) => {
+              if (!isSaving) handlePhotoSort(event);
+            }}>
             <div className='flex w-full flex-wrap justify-center gap-[1rem]'>
               {photoSlots.map((slot, index) => (
                 <PhotoUploadSlot
                   key={slot.id}
                   slot={slot}
                   index={index}
+                  disabled={isSaving}
                   className='basis-[calc((100%_-_2rem)/3)]'
                   onPhotoChange={handlePhotoChange}
                   onPhotoRemove={handlePhotoRemove}
@@ -72,7 +82,20 @@ export const PhotoUploadResetSheet = ({
           </p>
         </div>
         <div className='relative mt-auto pb-[2rem]'>
-          <Button text='저장하기' disabled />
+          <Button
+            text={isSaving ? '저장 중...' : '저장하기'}
+            description={
+              photos.some((photo) => photo.processingStatus === 'FAILED')
+                ? '처리에 실패한 사진은 다시 업로드해 주세요.'
+                : undefined
+            }
+            disabled={
+              isSaving ||
+              uploadedPhotoCount === 0 ||
+              !hasProfilePhotoChanges(photoSlots, photos)
+            }
+            onClick={() => void onSave(photoSlots)}
+          />
         </div>
       </div>
       <span className='sr-only'>

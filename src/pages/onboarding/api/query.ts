@@ -39,12 +39,12 @@ const getKeywordCatalog = () =>
 const getMyImages = () =>
   api.get(API_ENDPOINT.onboarding.images).json<GetMyImagesResponse>();
 
-const issuePresignedUrls = (body: IssuePresignedUrlsRequest) =>
+export const issuePresignedUrls = (body: IssuePresignedUrlsRequest) =>
   api
     .post(API_ENDPOINT.onboarding.presignedUrls, {json: body})
     .json<IssuePresignedUrlsResponse>();
 
-const saveImages = (body: SaveImagesRequest) =>
+export const saveImages = (body: SaveImagesRequest) =>
   api
     .post(API_ENDPOINT.onboarding.images, {json: body})
     .json<SaveImagesResponse>();

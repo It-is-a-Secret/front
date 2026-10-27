@@ -11,9 +11,17 @@ export interface PhotoSlot {
   file: File | null;
   previewUrl: string | null;
   objectKey?: string;
+  imageId?: number;
+  blurLevel?: number;
+  processingStatus?: 'PROCESSING' | 'READY' | 'FAILED';
 }
 
-type InitialPhoto = string | Pick<PhotoSlot, 'previewUrl' | 'objectKey'>;
+type InitialPhoto =
+  | string
+  | (Pick<
+      PhotoSlot,
+      'previewUrl' | 'objectKey' | 'blurLevel' | 'processingStatus'
+    > & {id?: number});
 
 export const createInitialPhotoSlots = (
   initialPhotos: readonly InitialPhoto[] = []
@@ -27,7 +35,12 @@ export const createInitialPhotoSlots = (
       previewUrl:
         typeof photo === 'string' ? photo : (photo?.previewUrl ?? null),
       ...(photo && typeof photo !== 'string'
-        ? {objectKey: photo.objectKey}
+        ? {
+            objectKey: photo.objectKey,
+            imageId: photo.id,
+            blurLevel: photo.blurLevel,
+            processingStatus: photo.processingStatus,
+          }
         : {}),
     };
   });
@@ -41,7 +54,11 @@ export const usePhotoUploadSlots = (
   const previewUrlsRef = useRef<Set<string>>(new Set());
 
   const uploadedPhotoCount = photoSlots.filter(
-    (slot) => slot.previewUrl || slot.objectKey
+    (slot) =>
+      slot.file ||
+      slot.previewUrl ||
+      slot.objectKey ||
+      slot.imageId !== undefined
   ).length;
 
   useEffect(() => {
@@ -80,6 +97,9 @@ export const usePhotoUploadSlots = (
           ...slot,
           file,
           previewUrl,
+          imageId: undefined,
+          objectKey: undefined,
+          processingStatus: undefined,
         };
       })
     );
@@ -101,6 +121,8 @@ export const usePhotoUploadSlots = (
           file: null,
           previewUrl: null,
           objectKey: undefined,
+          imageId: undefined,
+          processingStatus: undefined,
         };
       })
     );

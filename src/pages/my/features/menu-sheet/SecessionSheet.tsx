@@ -1,5 +1,7 @@
 import {NoticeMessage} from '@/pages/my/components/NoticeMessage';
 import {WithdrawalNoticeCard} from '@/pages/my/components/WithdrawalNoticeCard';
+import {ToastMessage} from '@/pages/my/components/ToastMessage';
+import {useWithdrawal} from '@/pages/my/hooks/useWithdrawal';
 import {Button} from '@/shared/components/Button';
 import {Header} from '@/shared/components/Header';
 import {
@@ -15,6 +17,7 @@ interface SecessionSheetProps {
 }
 
 export const SecessionSheet = ({onClose}: SecessionSheetProps) => {
+  const withdrawal = useWithdrawal(onClose);
   return (
     <section className='pb-[11.6rem]'>
       <Header
@@ -22,7 +25,7 @@ export const SecessionSheet = ({onClose}: SecessionSheetProps) => {
         leftItem={
           <IcSvgLeft width={24} height={24} className='text-gray-800' />
         }
-        onClickLeft={onClose}
+        onClickLeft={withdrawal.close}
       />
       <div className='mt-[1.6rem]'>
         <NoticeMessage message='탈퇴 전 아래 내용을 꼭 확인해 주세요' />
@@ -36,7 +39,7 @@ export const SecessionSheet = ({onClose}: SecessionSheetProps) => {
         <WithdrawalNoticeCard
           icon={<IcSvgWithdrawalChat className='size-[5.2rem]' />}
           title='진행 중인 대화가 종료돼요'
-          description='채팅방이 사라지고, 상대방의 대화 목록에서도 더 이상 표시되지 않아요'
+          description='참여 중인 대화가 종료되며, 상대방은 지난 대화 이력만 확인할 수 있어요'
         />
         <WithdrawalNoticeCard
           icon={<IcSvgWithdrawalCalendar className='size-[5.2rem]' />}
@@ -54,17 +57,27 @@ export const SecessionSheet = ({onClose}: SecessionSheetProps) => {
             <Button
               text='취소'
               className='border-primary text-button1-14b text-primary h-[5.6rem] rounded-[28px] border'
-              onClick={onClose}
+              onClick={withdrawal.close}
+              disabled={withdrawal.isSubmitting}
             />
           </div>
           <div className='flex-[1.8]'>
             <Button
-              text='탈퇴 하기'
+              text={withdrawal.isSubmitting ? '탈퇴 중...' : '탈퇴 하기'}
+              onClick={() => void withdrawal.submit()}
+              disabled={withdrawal.isSubmitting}
               className='bg-primary text-button1-14b text-white-800 h-[5.6rem] rounded-[28px] shadow-[0_8px_10px_0_rgba(194,30,86,0.25)]'
             />
           </div>
         </div>
       </div>
+      {withdrawal.toast.isVisible && (
+        <div
+          className={`fixed right-[2rem] bottom-[12rem] left-[2rem] z-[80] mx-auto max-w-[39rem] transition-opacity ${withdrawal.toast.isLeaving ? 'opacity-0' : 'opacity-100'}`}
+          style={{transitionDuration: `${withdrawal.toast.fadeDuration}ms`}}>
+          <ToastMessage message={withdrawal.errorMessage} />
+        </div>
+      )}
     </section>
   );
 };

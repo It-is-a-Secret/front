@@ -97,6 +97,8 @@ export const ProfileEditPage = () => {
           editStatus={edit.profile.profileEdit}
           isSaving={edit.isSaving}
           onSave={edit.saveProfile}
+          onSavePhotos={edit.savePhotos}
+          onSaveBlur={edit.saveBlur}
           onNotify={edit.notify}
           isKeywordsPending={edit.keywordsQuery.isPending}
           isKeywordsError={
