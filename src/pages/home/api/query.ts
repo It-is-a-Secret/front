@@ -19,10 +19,18 @@ const getDiscovery = (params?: GetDiscoveryParams) =>
     .get(API_ENDPOINT.discovery.list, {searchParams: params})
     .json<GetDiscoveryResponse>();
 
-const startChat = ({feedId, body}: StartChatVariables) =>
-  api
+const startChat = async ({feedId, body}: StartChatVariables) => {
+  const response = await api
     .post(API_ENDPOINT.discovery.startChat(feedId), {json: body})
     .json<StartChatResponse>();
+
+  const roomId = response.data?.roomId;
+  if (!roomId || !Number.isSafeInteger(roomId) || roomId <= 0) {
+    throw new Error('채팅방 정보를 확인하지 못했어요. 다시 시도해 주세요.');
+  }
+
+  return {...response, data: {...response.data, roomId}};
+};
 
 export const HOME_QUERY_OPTIONS = {
   DISCOVERY: (params?: GetDiscoveryParams) =>
@@ -33,5 +41,5 @@ export const HOME_QUERY_OPTIONS = {
 };
 
 export const HOME_MUTATION_OPTIONS = {
-  START_CHAT: () => mutationOptions({mutationFn: startChat}),
+  START_CHAT: () => mutationOptions({mutationFn: startChat, retry: false}),
 };
