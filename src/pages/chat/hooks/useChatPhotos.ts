@@ -51,7 +51,6 @@ export const useChatPhotos = ({
     readPhotoRevealOrders(revealStorage, memberId, roomId)
   );
   const [dismissed, setDismissed] = useState<number[]>([]);
-  const [failedAt, setFailedAt] = useState<number | null>(null);
   const unavailable =
     isHTTPError(imagesQuery.error) &&
     [403, 404, 409].includes(imagesQuery.error.response.status);
@@ -115,8 +114,6 @@ export const useChatPhotos = ({
     currentReveal,
     imagesQuery,
     unavailable,
-    hasImageError: failedAt === imagesQuery.dataUpdatedAt,
-    reportImageError: () => setFailedAt(imagesQuery.dataUpdatedAt),
     closeReveal,
   };
 };

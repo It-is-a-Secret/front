@@ -7,18 +7,11 @@ import {IcSvgLeft} from '@/shared/icons';
 interface ChatImageListProps {
   photos: RevealedImage[];
   refreshKey: number;
-  onImageError: () => void;
   onRefresh: () => void;
   isRefreshing: boolean;
 }
 
-const ChatPhotoThumbnail = ({
-  photo,
-  onImageError,
-}: {
-  photo: RevealedImage;
-  onImageError: () => void;
-}) => {
+const ChatPhotoThumbnail = ({photo}: {photo: RevealedImage}) => {
   const [failed, setFailed] = useState(false);
   return failed ? (
     <span className='text-button2-10r flex size-full items-center justify-center bg-gray-100 text-gray-600'>
@@ -35,7 +28,6 @@ const ChatPhotoThumbnail = ({
       className='size-full object-cover'
       onError={() => {
         setFailed(true);
-        onImageError();
       }}
     />
   );
@@ -44,13 +36,11 @@ const ChatPhotoThumbnail = ({
 const ChatPhotoViewer = ({
   photo,
   onClose,
-  onImageError,
   onRefresh,
   isRefreshing,
 }: {
   photo: RevealedImage;
   onClose: () => void;
-  onImageError: () => void;
   onRefresh: () => void;
   isRefreshing: boolean;
 }) => {
@@ -100,7 +90,6 @@ const ChatPhotoViewer = ({
             className='max-h-full w-full object-contain'
             onError={() => {
               setFailed(true);
-              onImageError();
             }}
           />
         )}
@@ -112,7 +101,6 @@ const ChatPhotoViewer = ({
 export const ChatImageList = ({
   photos,
   refreshKey,
-  onImageError,
   onRefresh,
   isRefreshing,
 }: ChatImageListProps) => {
@@ -151,7 +139,6 @@ export const ChatImageList = ({
                 <ChatPhotoThumbnail
                   key={`${photo.imageUrl}-${refreshKey}`}
                   photo={photo}
-                  onImageError={onImageError}
                 />
               </button>
             </li>
@@ -163,7 +150,6 @@ export const ChatImageList = ({
           key={`${selectedPhoto.displayOrder}-${selectedPhoto.imageUrl}-${refreshKey}`}
           photo={selectedPhoto}
           onClose={() => setSelectedOrder(null)}
-          onImageError={onImageError}
           onRefresh={onRefresh}
           isRefreshing={isRefreshing}
         />

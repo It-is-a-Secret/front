@@ -12,15 +12,8 @@ interface ChatPhotoSectionProps {
 }
 
 export const ChatPhotoSection = (props: ChatPhotoSectionProps) => {
-  const {
-    photos,
-    currentReveal,
-    imagesQuery,
-    unavailable,
-    hasImageError,
-    reportImageError,
-    closeReveal,
-  } = useChatPhotos(props);
+  const {photos, currentReveal, imagesQuery, unavailable, closeReveal} =
+    useChatPhotos(props);
   const refresh = () => {
     void imagesQuery.refetch();
   };
@@ -47,19 +40,11 @@ export const ChatPhotoSection = (props: ChatPhotoSectionProps) => {
       {photos.length > 0 && (
         <ChatImageList
           photos={photos}
-          onImageError={reportImageError}
           refreshKey={imagesQuery.dataUpdatedAt}
           onRefresh={refresh}
           isRefreshing={imagesQuery.isFetching}
         />
       )}
-      {imagesQuery.isError || hasImageError ? (
-        <p
-          role='alert'
-          className='text-caption2-12sb px-[2rem] py-[1.6rem] text-center text-gray-600'>
-          사진을 불러오지 못했어요.
-        </p>
-      ) : null}
       {currentReveal && (
         <PhotoRevealEvent
           key={`${currentReveal.displayOrder}-${currentReveal.imageUrl}-${imagesQuery.dataUpdatedAt}`}
@@ -70,7 +55,6 @@ export const ChatPhotoSection = (props: ChatPhotoSectionProps) => {
           onClose={closeReveal}
           onRefresh={refresh}
           isRefreshing={imagesQuery.isFetching}
-          onImageError={reportImageError}
         />
       )}
     </>

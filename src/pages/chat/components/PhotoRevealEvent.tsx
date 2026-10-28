@@ -9,7 +9,6 @@ interface PhotoRevealEventProps {
   onClose: (viewed: boolean) => void;
   onRefresh: () => void;
   isRefreshing: boolean;
-  onImageError: () => void;
 }
 
 const KOREAN_ORDINALS = ['첫', '두', '세', '네', '다섯'];
@@ -25,7 +24,6 @@ export const PhotoRevealEvent = ({
   onClose,
   onRefresh,
   isRefreshing,
-  onImageError,
 }: PhotoRevealEventProps) => {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const ordinal = getOrdinal(displayOrder);
@@ -84,7 +82,6 @@ export const PhotoRevealEvent = ({
               onLoad={() => setImageStatus('loaded')}
               onError={() => {
                 setImageStatus('error');
-                onImageError();
               }}
             />
           )}
