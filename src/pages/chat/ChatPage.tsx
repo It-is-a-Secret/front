@@ -1,30 +1,21 @@
 import {useEffect, useState} from 'react';
+import {useQuery} from '@tanstack/react-query';
 import {useLocation, useNavigate} from 'react-router-dom';
 
-import {
-  ChatListItem,
-  type ChatListItemProps,
-} from '@/pages/chat/components/ChatListItem';
+import {CHAT_QUERY_OPTIONS} from '@/pages/chat/api/query';
+import {ChatListItem} from '@/pages/chat/components/ChatListItem';
 import {ToastMessage} from '@/pages/my/components/ToastMessage';
 import {EmptyState} from '@/shared/components/EmptyState';
+import {Button} from '@/shared/components/Button';
 import {Header} from '@/shared/components/Header';
 import {useToast} from '@/shared/hooks/useToast';
-
-const MOCK_CHAT_ROOMS: ChatListItemProps[] = [
-  {
-    chatRoomId: 1,
-    nickname: '행복한코딩러',
-    lastMessage: '오 좋다. 그럼 다음에 추천곡 공유해줘요',
-    lastMessageCreatedAt: '2026-08-29T15:53:00',
-    unreadCount: 1,
-    publicPhotoCount: 2,
-  },
-];
 
 export const ChatPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const hasChatRooms = MOCK_CHAT_ROOMS.length > 0;
+  const roomsQuery = useQuery(CHAT_QUERY_OPTIONS.ROOMS());
+  const chatRooms = roomsQuery.data?.data ?? [];
+  const hasChatRooms = chatRooms.length > 0;
   const toastMessage =
     typeof location.state === 'object' &&
     location.state !== null &&
@@ -59,10 +50,29 @@ export const ChatPage = () => {
         }
       />
 
-      {hasChatRooms ? (
-        <ul>
-          {MOCK_CHAT_ROOMS.map((chatRoom) => (
-            <ChatListItem key={chatRoom.chatRoomId} {...chatRoom} />
+      {roomsQuery.isPending ? (
+        <div
+          role='status'
+          className='text-body1-15r flex flex-1 items-center justify-center pb-[12rem] text-gray-600'>
+          채팅 목록을 불러오고 있어요.
+        </div>
+      ) : roomsQuery.isError ? (
+        <div className='flex flex-1 flex-col items-center justify-center gap-[2.4rem] px-[2rem] pb-[12rem]'>
+          <p role='alert' className='text-body1-15r text-center text-gray-600'>
+            채팅 목록을 불러오지 못했어요.
+          </p>
+          <div className='w-full max-w-[28rem] [&>div]:h-[5.2rem]'>
+            <Button
+              text={roomsQuery.isFetching ? '확인 중...' : '다시 시도'}
+              disabled={roomsQuery.isFetching}
+              onClick={() => void roomsQuery.refetch()}
+            />
+          </div>
+        </div>
+      ) : hasChatRooms ? (
+        <ul className='pb-[12rem]'>
+          {chatRooms.map((chatRoom) => (
+            <ChatListItem key={chatRoom.roomId} {...chatRoom} />
           ))}
         </ul>
       ) : (

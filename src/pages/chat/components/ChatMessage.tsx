@@ -1,20 +1,25 @@
-interface ChatMessageProps {
-  content: string;
-  sentAt: string;
+import type {ChatMessageResponse} from '@/pages/chat/api/type';
+import {formatChatTime} from '@/pages/chat/utils/format-chat-time';
+
+interface ChatMessageProps extends Pick<
+  ChatMessageResponse,
+  'content' | 'createdAt' | 'type'
+> {
   isMine: boolean;
   isRead?: boolean;
 }
 
 export const ChatMessage = ({
   content,
-  sentAt,
+  createdAt,
+  type,
   isMine,
   isRead,
 }: ChatMessageProps) => {
   const meta = (
     <span className='text-caption1-12r text-gray-800'>
       {isMine && (isRead ? '' : '안읽음•')}
-      {sentAt}
+      <time dateTime={createdAt}>{formatChatTime(createdAt)}</time>
     </span>
   );
 
@@ -25,7 +30,7 @@ export const ChatMessage = ({
   const bubble = (
     <p
       className={`text-input1-14r bg-primary-400 max-w-[24rem] px-[1.6rem] py-[0.8rem] break-words ${bubbleClassName}`}>
-      {content}
+      {type === 'IMAGE' ? '사진 메시지' : content}
     </p>
   );
 

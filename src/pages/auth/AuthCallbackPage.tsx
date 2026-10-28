@@ -1,9 +1,12 @@
 import {useEffect, useRef, useState} from 'react';
+import {useQueryClient} from '@tanstack/react-query';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 
-import type {GetMyProfileResponse} from '@/pages/my/api/type';
-import {api, publicApi} from '@/shared/api/config/instance';
+import {publicApi} from '@/shared/api/config/instance';
 import {setAccessToken} from '@/shared/api/config/auth-token';
+import {QUERY_KEYS} from '@/shared/api/config/query-key';
+import {authSessionQueryOptions} from '@/shared/auth/session-query';
+import {Button} from '@/shared/components/Button';
 import {API_ENDPOINT} from '@/shared/api/end-point';
 import type {KakaoCallbackResponse} from '@/shared/types/auth/type';
 
@@ -11,6 +14,7 @@ const kakaoCallbackRequests = new Map<string, Promise<string>>();
 
 export const AuthCallbackPage = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const authorizationCode = searchParams.get('code');
   const hasRequestedCallback = useRef(false);
@@ -59,13 +63,16 @@ export const AuthCallbackPage = () => {
 
         const accessToken = await callbackRequest;
 
+        await queryClient.cancelQueries();
+        queryClient.clear();
         localStorage.removeItem('accessToken');
         setAccessToken(accessToken);
         sessionStorage.removeItem('kakaoRedirectUri');
 
-        const profile = await api
-          .get(API_ENDPOINT.profile.me)
-          .json<GetMyProfileResponse>();
+        const {profile} = await queryClient.fetchQuery(
+          authSessionQueryOptions()
+        );
+        queryClient.setQueryData(QUERY_KEYS.profile.me(), profile);
         const registrationStatus = profile.data?.registrationStatus;
 
         if (registrationStatus === 'COMPLETED') {
@@ -86,7 +93,7 @@ export const AuthCallbackPage = () => {
     };
 
     void completeKakaoLogin();
-  }, [authorizationCode, navigate]);
+  }, [authorizationCode, navigate, queryClient]);
 
   const displayedErrorMessage = authorizationCode
     ? errorMessage
@@ -94,11 +101,16 @@ export const AuthCallbackPage = () => {
 
   if (displayedErrorMessage) {
     return (
-      <section className='flex min-h-dvh flex-col items-center justify-center gap-4'>
-        <p>{displayedErrorMessage}</p>
-        <button type='button' onClick={() => navigate('/auth', {replace: true})}>
-          로그인 화면으로 돌아가기
-        </button>
+      <section className='flex min-h-dvh flex-col items-center justify-center gap-[2.4rem] px-[2rem] text-center'>
+        <p role='alert' className='text-body1-15r text-gray-600'>
+          {displayedErrorMessage}
+        </p>
+        <div className='w-full max-w-[28rem] [&>div]:h-[5.2rem]'>
+          <Button
+            text='로그인 화면으로 돌아가기'
+            onClick={() => navigate('/auth', {replace: true})}
+          />
+        </div>
       </section>
     );
   }

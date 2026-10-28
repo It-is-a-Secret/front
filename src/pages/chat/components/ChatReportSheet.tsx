@@ -1,33 +1,27 @@
-import {useState} from 'react';
-
+import {REPORT_REASONS, useChatReport} from '@/pages/chat/hooks/useChatReport';
+import type {ReportRequest} from '@/shared/api/moderation/type';
 import {BottomSheet} from '@/shared/components/BottomSheet';
 import {Button} from '@/shared/components/Button';
 
-const REPORT_REASONS = [
-  '불쾌한 대화',
-  '성적인 내용',
-  '만남/약속 강요',
-  '위험한 사람',
-  '금전·개인정보 요구',
-  '광고·홍보',
-  '기타',
-] as const;
-
-type ReportReason = (typeof REPORT_REASONS)[number];
+type ReportReason = ReportRequest['reason'];
 
 interface ChatReportSheetProps {
   open: boolean;
+  roomId: number;
+  partnerId: number | undefined;
   onClose: () => void;
 }
 
 interface ReportReasonRadioProps {
   reason: ReportReason;
+  label: string;
   checked: boolean;
   onChange: (reason: ReportReason) => void;
 }
 
 const ReportReasonRadio = ({
   reason,
+  label,
   checked,
   onChange,
 }: ReportReasonRadioProps) => {
@@ -42,26 +36,29 @@ const ReportReasonRadio = ({
         onChange={() => onChange(reason)}
       />
       <span className='relative size-[2rem] rounded-full border border-gray-800 peer-checked:border-gray-800 after:absolute after:top-1/2 after:left-1/2 after:size-[1.3rem] after:-translate-x-1/2 after:-translate-y-1/2 after:rounded-full peer-checked:after:bg-gray-800' />
-      {reason}
+      {label}
     </label>
   );
 };
 
-export const ChatReportSheet = ({open, onClose}: ChatReportSheetProps) => {
-  const [selectedReason, setSelectedReason] = useState<ReportReason | null>(
-    REPORT_REASONS[0]
-  );
-  const [detail, setDetail] = useState('');
-  const [isSubmitted, setIsSubmitted] = useState(false);
-
-  const handleClose = () => {
-    onClose();
-    setIsSubmitted(false);
-  };
-
-  const handleSubmit = () => {
-    setIsSubmitted(true);
-  };
+export const ChatReportSheet = ({
+  open,
+  roomId,
+  partnerId,
+  onClose,
+}: ChatReportSheetProps) => {
+  const {
+    selectedReason,
+    setSelectedReason,
+    detail,
+    setDetail,
+    isSubmitted,
+    isPending,
+    canSubmit,
+    errorMessage,
+    handleSubmit,
+    handleClose,
+  } = useChatReport({roomId, partnerId, onClose});
 
   return (
     <BottomSheet
@@ -98,13 +95,16 @@ export const ChatReportSheet = ({open, onClose}: ChatReportSheetProps) => {
             </p>
           </div>
           <div className='flex flex-col items-center px-[1.6rem]'>
-            <fieldset className='mt-[2.9rem] grid w-full grid-cols-[max-content_max-content] gap-x-[3.5rem] gap-y-[2rem]'>
+            <fieldset
+              disabled={isPending}
+              className='mt-[2.9rem] grid w-full grid-cols-[max-content_max-content] gap-x-[3.5rem] gap-y-[2rem]'>
               <legend className='sr-only'>신고 사유</legend>
-              {REPORT_REASONS.map((reason) => (
+              {REPORT_REASONS.map(({value, label}) => (
                 <ReportReasonRadio
-                  key={reason}
-                  reason={reason}
-                  checked={selectedReason === reason}
+                  key={value}
+                  reason={value}
+                  label={label}
+                  checked={selectedReason === value}
                   onChange={setSelectedReason}
                 />
               ))}
@@ -112,25 +112,36 @@ export const ChatReportSheet = ({open, onClose}: ChatReportSheetProps) => {
 
             <input
               value={detail}
+              aria-label='신고 상세 내용'
+              disabled={isPending}
               placeholder='내용을 입력해 주세요'
               className='text-input1-14r bg-white-800 mt-[0.8rem] h-[4.8rem] w-full rounded-[16px] border border-gray-200 px-[1.6rem] text-gray-800 outline-none placeholder:text-gray-400'
               onChange={(event) => setDetail(event.target.value)}
             />
           </div>
 
+          {errorMessage && (
+            <p
+              role='alert'
+              className='text-caption2-12sb mt-[1.2rem] text-center text-gray-600'>
+              {errorMessage}
+            </p>
+          )}
+
           <div className='mt-[2.4rem] flex w-full gap-[0.8rem]'>
             <div className='flex-[1]'>
               <Button
                 text='취소'
+                disabled={isPending}
                 className='border-primary text-button1-14b text-primary h-[5.6rem] rounded-[28px] border'
                 onClick={handleClose}
               />
             </div>
             <div className='flex-[1.8]'>
               <Button
-                text='신고하기'
+                text={isPending ? '접수 중...' : '신고하기'}
                 className='bg-primary text-button1-14b text-white-800 h-[5.6rem] rounded-[28px] shadow-[0_8px_10px_0_rgba(194,30,86,0.25)]'
-                disabled={!selectedReason}
+                disabled={!canSubmit}
                 onClick={handleSubmit}
               />
             </div>

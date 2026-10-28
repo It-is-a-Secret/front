@@ -24,7 +24,7 @@ export const handleCheckAndSetToken = (request: Request) => {
   }
 };
 
-const refreshAccessToken = () => {
+export const refreshAccessToken = () => {
   if (!refreshPromise) {
     refreshPromise = refreshApi
       .post(API_ENDPOINT.auth.refreshToken)
@@ -51,12 +51,14 @@ interface UnauthorizedResponseParams {
   request: Request;
   response: Response;
   retryCount: number;
+  options: {context: Record<string, unknown>};
 }
 
 export const handleUnauthorizedResponse = async ({
   request,
   response,
   retryCount,
+  options,
 }: UnauthorizedResponseParams) => {
   if (response.status !== 401 || retryCount > 0) {
     return response;
@@ -72,8 +74,11 @@ export const handleUnauthorizedResponse = async ({
       code: 'TOKEN_REFRESHED',
       request: new Request(request, {headers}),
     });
-  } catch {
+  } catch (error) {
     clearAccessToken();
+    if (options.context.skipAuthRedirect) {
+      throw error;
+    }
     window.location.replace('/auth');
 
     return response;
