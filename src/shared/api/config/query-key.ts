@@ -12,6 +12,8 @@ export const QUERY_KEYS = {
   },
   discovery: {
     all: ['discovery'] as const,
+    detail: (feedId: number) =>
+      [...QUERY_KEYS.discovery.all, 'detail', feedId] as const,
     list: (page = 0, size = 20) =>
       [...QUERY_KEYS.discovery.all, 'list', {page, size}] as const,
   },

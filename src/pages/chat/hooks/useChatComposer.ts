@@ -21,15 +21,17 @@ export const useChatComposer = ({
   memberId,
   canSend,
   latestMessageId,
+  initialMessage = '',
 }: {
   roomId: number;
   memberId: number | null;
   canSend: boolean;
   latestMessageId: number;
+  initialMessage?: string;
 }) => {
   const {status, publish} = useStomp();
   const queryClient = useQueryClient();
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState(initialMessage);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pendingRef = useRef<PendingMessage | null>(null);

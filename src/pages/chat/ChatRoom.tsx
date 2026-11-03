@@ -1,4 +1,6 @@
-import {useNavigate, useParams} from 'react-router-dom';
+import {useEffect} from 'react';
+import {useLocation, useNavigate, useParams} from 'react-router-dom';
+import {readChatDraft} from '@/pages/chat/model/chat-entry';
 
 import {ChatInputBox} from '@/pages/chat/components/ChatInputBox';
 import {ChatReportSheet} from '@/pages/chat/components/ChatReportSheet';
@@ -27,12 +29,20 @@ export const ChatRoom = () => {
 
 const ChatRoomContent = ({roomId}: {roomId: number}) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const initialMessage = readChatDraft(location.state);
+  useEffect(() => {
+    if (initialMessage) {
+      void navigate('.', {replace: true, state: null});
+    }
+  }, [initialMessage, navigate]);
   const chat = useChatRoomQuery(roomId);
   const composer = useChatComposer({
     roomId,
     memberId: chat.memberId,
     canSend: chat.room?.roomStatus === 'ACTIVE',
     latestMessageId: chat.messages.at(-1)?.messageId ?? 0,
+    initialMessage,
   });
   const realtime = useChatRoomRealtime({
     roomId,
@@ -93,7 +103,7 @@ const ChatRoomContent = ({roomId}: {roomId: number}) => {
         <Header
           className='px-[2rem]'
           leftItem={<IcSvgLeft className='size-[2.4rem] text-gray-800' />}
-          onClickLeft={() => navigate(-1)}
+          onClickLeft={() => navigate('/chat', {replace: true})}
           title={
             <div className='flex items-center gap-[0.8rem]'>
               <h1 className='text-title-18b text-gray-800'>
