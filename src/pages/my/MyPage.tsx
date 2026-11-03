@@ -50,8 +50,9 @@ export const MyPage = () => {
     useState<MyMenuSheetType | null>(null);
 
   return (
-    <main className='flex min-h-dvh flex-col'>
+    <main className='flex h-dvh flex-col overflow-y-auto overscroll-y-none pb-[12rem]'>
       <Header
+        className='shrink-0'
         title={
           <h1 className='text-bold-24 text-gray-800'>
             Blur<span className='text-primary'>Some</span>
@@ -68,7 +69,7 @@ export const MyPage = () => {
           />
         </div>
       )}
-      <section className='mt-[1.6rem]'>
+      <section className='mt-[1.6rem] shrink-0'>
         <Profile
           nickname='행복한코딩러'
           birthYear='00'

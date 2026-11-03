@@ -15,7 +15,7 @@ export const ProfileEditPage = () => {
   const edit = useProfileEdit();
 
   return (
-    <main className='min-h-dvh pb-[12rem]'>
+    <main className='h-dvh overflow-y-auto overscroll-y-none pb-[12rem]'>
       <Header
         title={<h1 className='text-title-18b text-gray-800'>프로필 수정</h1>}
         leftItem={
