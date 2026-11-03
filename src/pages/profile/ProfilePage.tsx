@@ -1,11 +1,10 @@
-import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import {useQuery} from '@tanstack/react-query';
 import {isHTTPError} from 'ky';
-import {useRef, useState} from 'react';
+import {useState} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
 
+import {getChatEntryPath} from '@/pages/chat/model/chat-entry';
 import {Chip} from '@/pages/onboarding/components/Chip';
-import {HOME_MUTATION_OPTIONS} from '@/pages/home/api/query';
-import {refreshChatRooms} from '@/pages/chat/utils/refresh-chat-rooms';
 import type {GetDiscoveryDetailResponse} from '@/pages/profile/api/type';
 import {PROFILE_QUERY_OPTIONS} from '@/pages/profile/api/query';
 import {ProfileImageCarousel} from '@/pages/profile/components/ProfileImageCarousel';
@@ -13,12 +12,9 @@ import {BottomSheet} from '@/shared/components/BottomSheet';
 import {Button} from '@/shared/components/Button';
 import {Header} from '@/shared/components/Header';
 import {IcSvgEtc, IcSvgLeft} from '@/shared/icons';
-import {QUERY_KEYS} from '@/shared/api';
 
 export const ProfilePage = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const isStartingChatRef = useRef(false);
   const {userId} = useParams<{userId: string}>();
   const feedId = Number(userId);
   const isValidFeedId = Number.isSafeInteger(feedId) && feedId > 0;
@@ -43,40 +39,6 @@ export const ProfilePage = () => {
     interests.set(category, items);
   }
   const [isOnboardingSheetOpen, setIsOnboardingSheetOpen] = useState(false);
-  const startChatMutation = useMutation({
-    ...HOME_MUTATION_OPTIONS.START_CHAT(),
-    onSuccess: (response) => {
-      const roomId = response.data.roomId;
-      void refreshChatRooms(queryClient);
-      void queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.chat.room(roomId),
-      });
-      navigate(`/chat/${roomId}`);
-    },
-    onError: (error) => {
-      if (isHTTPError(error) && error.response.status === 403) {
-        setIsOnboardingSheetOpen(true);
-      }
-    },
-    onSettled: () => {
-      isStartingChatRef.current = false;
-    },
-  });
-  const startChatErrorStatus = isHTTPError(startChatMutation.error)
-    ? startChatMutation.error.response.status
-    : undefined;
-  const startChatErrorMessage = !startChatMutation.isError
-    ? null
-    : startChatErrorStatus === 403
-      ? '온보딩을 완료해야 채팅을 시작할 수 있어요.'
-      : startChatErrorStatus === 404
-        ? '상대방 프로필을 찾을 수 없어요.'
-        : startChatErrorStatus === 409
-          ? '현재 이 상대와 채팅을 시작할 수 없어요.'
-          : startChatErrorStatus === 400
-            ? '채팅 요청 정보를 확인해 주세요.'
-            : '채팅을 시작하지 못했어요. 잠시 후 다시 시도해 주세요.';
-
   const handleCloseOnboardingSheet = () => {
     setIsOnboardingSheetOpen(false);
   };
@@ -87,9 +49,8 @@ export const ProfilePage = () => {
       return;
     }
 
-    if (!isValidFeedId || !profile || isStartingChatRef.current) return;
-    isStartingChatRef.current = true;
-    startChatMutation.mutate({feedId, body: {}});
+    if (!isValidFeedId || !profile) return;
+    navigate(getChatEntryPath(feedId, profile.chatRoom));
   };
 
   return (
@@ -190,19 +151,9 @@ export const ProfilePage = () => {
           </div>
 
           <div className='mt-[2.8rem]'>
-            {startChatErrorMessage && (
-              <p role='alert' className='text-body3-14m text-error mb-[1.2rem]'>
-                {startChatErrorMessage}
-              </p>
-            )}
             <Button
-              text={
-                startChatMutation.isPending
-                  ? '채팅 연결 중...'
-                  : '채팅 시작하기'
-              }
+              text='채팅 시작하기'
               description='대화가 진전되면 사진이 한 장씩 공개돼요'
-              disabled={startChatMutation.isPending}
               onClick={handleStartChat}
             />
           </div>

@@ -7,6 +7,7 @@ import {AuthCallbackPage} from '@/pages/auth/AuthCallbackPage';
 import {AuthPage} from '@/pages/auth/AuthPage';
 import {ChatPage} from '@/pages/chat/ChatPage';
 import {ChatRoom} from '@/pages/chat/ChatRoom';
+import {NewChatRoom} from '@/pages/chat/NewChatRoom';
 import {HomePage} from '@/pages/home/HomePage';
 import {MyPage} from '@/pages/my/MyPage';
 import {ProfileEditPage} from '@/pages/my/ProfileEditPage';
@@ -77,6 +78,10 @@ export const router = createBrowserRouter([
             <ProfilePage />
           </Layout>
         ),
+      },
+      {
+        path: '/chat/new/:feedId',
+        element: <NewChatRoom />,
       },
       {
         path: '/chat/:roomId',

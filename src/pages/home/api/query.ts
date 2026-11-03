@@ -20,6 +20,9 @@ const getDiscovery = (params?: GetDiscoveryParams) =>
     .json<GetDiscoveryResponse>();
 
 const startChat = async ({feedId, body}: StartChatVariables) => {
+  if (!body.message.trim()) {
+    throw new Error('메시지를 입력해 주세요.');
+  }
   const response = await api
     .post(API_ENDPOINT.discovery.startChat(feedId), {json: body})
     .json<StartChatResponse>();

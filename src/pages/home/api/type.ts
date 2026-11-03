@@ -5,6 +5,9 @@ export type GetDiscoveryParams =
 export type GetDiscoveryResponse =
   components['schemas']['DataResponseListDiscoveryCardResponse'];
 
-export type StartChatRequest = components['schemas']['ChatStartRequest'];
+// 서버는 생성 스키마의 optional 표시와 달리 빈 메시지를 허용하지 않습니다.
+export type StartChatRequest = components['schemas']['ChatStartRequest'] & {
+  message: string;
+};
 export type StartChatResponse =
   components['schemas']['DataResponseChatStartResponse'];
