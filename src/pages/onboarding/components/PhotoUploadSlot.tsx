@@ -11,6 +11,7 @@ interface PhotoUploadSlotProps {
   index: number;
   className?: string;
   disabled?: boolean;
+  editDisabled?: boolean;
   onPhotoChange: (id: string, file: File) => void;
   onPhotoRemove: (id: string) => void;
 }
@@ -20,6 +21,7 @@ export const PhotoUploadSlot = ({
   index,
   className = '',
   disabled = false,
+  editDisabled = false,
   onPhotoChange,
   onPhotoRemove,
 }: PhotoUploadSlotProps) => {
@@ -71,7 +73,7 @@ export const PhotoUploadSlot = ({
       {hasPhoto && (
         <button
           type='button'
-          disabled={disabled}
+          disabled={disabled || editDisabled}
           aria-label='사진 삭제'
           className='absolute top-[1rem] right-[1rem] z-10 flex items-center justify-center rounded-full text-black'
           onClick={(event) => {
@@ -86,7 +88,7 @@ export const PhotoUploadSlot = ({
       <input
         id={inputId}
         type='file'
-        disabled={disabled}
+        disabled={disabled || editDisabled}
         accept='image/jpeg,image/png,image/heic,image/heif'
         className='sr-only'
         onChange={(event) => {

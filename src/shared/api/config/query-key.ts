@@ -1,4 +1,8 @@
 export const QUERY_KEYS = {
+  moderation: {
+    all: ['moderation'] as const,
+    blocks: () => [...QUERY_KEYS.moderation.all, 'blocks'] as const,
+  },
   onboarding: {
     all: ['onboarding'] as const,
     keywords: () => [...QUERY_KEYS.onboarding.all, 'keywords'] as const,

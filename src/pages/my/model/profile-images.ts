@@ -10,6 +10,27 @@ import type {
   SaveImagesResponse,
 } from '@/pages/onboarding/api/type';
 import type {ProfilePhoto} from './profile-edit';
+import type {ProfileEditStatus} from '@/pages/my/api/type';
+
+export const canEditProfilePhoto = (
+  slot: PhotoSlot,
+  status?: ProfileEditStatus
+) =>
+  status?.changeable !== false ||
+  slot.imageId === undefined ||
+  slot.processingStatus === 'FAILED';
+
+export const hasRestrictedPhotoRemoval = (
+  slots: PhotoSlot[],
+  photos: ProfilePhoto[],
+  status?: ProfileEditStatus
+) =>
+  status?.changeable === false &&
+  photos.some(
+    (photo) =>
+      photo.processingStatus !== 'FAILED' &&
+      !slots.some((slot) => !slot.file && slot.imageId === photo.id)
+  );
 
 interface ImageApi {
   issuePresignedUrls: (

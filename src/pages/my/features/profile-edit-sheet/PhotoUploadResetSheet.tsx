@@ -1,7 +1,13 @@
 import {DragDropProvider} from '@dnd-kit/react';
 
 import type {ProfilePhoto} from '@/pages/my/model/profile-edit';
-import {hasProfilePhotoChanges} from '@/pages/my/model/profile-images';
+import {getProfileChangeNote} from '@/pages/my/model/profile-edit';
+import type {ProfileEditStatus} from '@/pages/my/api/type';
+import {
+  canEditProfilePhoto,
+  hasRestrictedPhotoRemoval,
+  hasProfilePhotoChanges,
+} from '@/pages/my/model/profile-images';
 import type {PhotoSlot} from '@/pages/onboarding/hooks/usePhotoUploadSlots';
 import {PhotoUploadSlot} from '@/pages/onboarding/components/PhotoUploadSlot';
 import {
@@ -14,6 +20,7 @@ import {IcSvgLeft} from '@/shared/icons';
 
 interface PhotoUploadResetSheetProps {
   photos: ProfilePhoto[];
+  editStatus?: ProfileEditStatus;
   onClose: () => void;
   isSaving: boolean;
   onSave: (slots: PhotoSlot[]) => Promise<void>;
@@ -21,6 +28,7 @@ interface PhotoUploadResetSheetProps {
 
 export const PhotoUploadResetSheet = ({
   photos,
+  editStatus,
   onClose,
   isSaving,
   onSave,
@@ -32,6 +40,12 @@ export const PhotoUploadResetSheet = ({
     handlePhotoRemove,
     handlePhotoSort,
   } = usePhotoUploadSlots(photos);
+  const changeNote = getProfileChangeNote(editStatus);
+  const hasRestrictedChanges = hasRestrictedPhotoRemoval(
+    photoSlots,
+    photos,
+    editStatus
+  );
 
   return (
     <section className='flex h-dvh flex-col overflow-hidden'>
@@ -69,6 +83,7 @@ export const PhotoUploadResetSheet = ({
                   slot={slot}
                   index={index}
                   disabled={isSaving}
+                  editDisabled={!canEditProfilePhoto(slot, editStatus)}
                   className='basis-[calc((100%_-_2rem)/3)]'
                   onPhotoChange={handlePhotoChange}
                   onPhotoRemove={handlePhotoRemove}
@@ -80,17 +95,27 @@ export const PhotoUploadResetSheet = ({
           <p className='text-caption1-12r whitespace-pre-line text-gray-400'>
             {'JPG · PNG · HEIC 지원\n순서를 드래그로 변경할 수 있어요'}
           </p>
+          {editStatus?.changeable === false && (
+            <p className='text-caption1-12r text-gray-600'>
+              사진은 30일에 한 번만 교체할 수 있어요. 순서 변경, 빈 자리 추가,
+              처리 실패 사진 교체는 가능해요.
+            </p>
+          )}
         </div>
         <div className='relative mt-auto pb-[2rem]'>
           <Button
             text={isSaving ? '저장 중...' : '저장하기'}
-            description={
+            description={[
+              changeNote,
               photos.some((photo) => photo.processingStatus === 'FAILED')
                 ? '처리에 실패한 사진은 다시 업로드해 주세요.'
-                : undefined
-            }
+                : '',
+            ]
+              .filter(Boolean)
+              .join(' / ')}
             disabled={
               isSaving ||
+              hasRestrictedChanges ||
               uploadedPhotoCount === 0 ||
               !hasProfilePhotoChanges(photoSlots, photos)
             }

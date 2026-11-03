@@ -1,6 +1,7 @@
 import {useRef, useState} from 'react';
 
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import {isHTTPError} from 'ky';
 
 import {MY_MUTATION_OPTIONS, MY_QUERY_OPTIONS} from '@/pages/my/api/query';
 import type {ProfileEditSheetType} from '@/pages/my/features/profile-edit-sheet/ProfileEditSheet';
@@ -25,6 +26,7 @@ import {
 import type {PhotoSlot} from '@/pages/onboarding/hooks/usePhotoUploadSlots';
 import {
   buildBlurUpdateRequest,
+  hasRestrictedPhotoRemoval,
   saveProfilePhotos,
 } from '@/pages/my/model/profile-images';
 import {QUERY_KEYS} from '@/shared/api';
@@ -131,6 +133,14 @@ export const useProfileEdit = () => {
       notify(successMessage);
     } catch (error) {
       notify(getProfileErrorMessage(error, '사진을 저장하지 못했어요.'));
+      if (
+        isHTTPError(error) &&
+        error.response.status === 409 &&
+        (error.data as {code?: string} | undefined)?.code ===
+          'MEMBER_409_PHOTOS_CHANGE_LIMITED'
+      ) {
+        void queryClient.invalidateQueries({queryKey: QUERY_KEYS.profile.me()});
+      }
     } finally {
       savingRef.current = false;
       setIsSaving(false);
@@ -140,9 +150,33 @@ export const useProfileEdit = () => {
   const savePhotos = (slots: PhotoSlot[]) => {
     const defaultLevel =
       BLUR_STRENGTHS.find((level) => level === photos[0]?.blurLevel) ?? 70;
-    return saveImageChanges(() =>
-      saveProfilePhotos(slots, defaultLevel, {issuePresignedUrls, saveImages})
-    );
+    return saveImageChanges(async () => {
+      const [latestProfile, latestImages] = await Promise.all([
+        queryClient.fetchQuery({...MY_QUERY_OPTIONS.PROFILE(), staleTime: 0}),
+        queryClient.fetchQuery({
+          ...ONBOARDING_QUERY_OPTIONS.IMAGES(),
+          staleTime: 0,
+        }),
+      ]);
+      if (!latestProfile.data || !latestImages.data?.images) {
+        throw new Error('사진 정보를 다시 불러와 주세요.');
+      }
+      if (
+        hasRestrictedPhotoRemoval(
+          slots,
+          getProfilePhotos(latestImages.data.images),
+          latestProfile.data.profileEdit?.photos
+        )
+      ) {
+        throw new Error(
+          '사진은 30일에 한 번만 교체할 수 있어요. 다음 변경 가능일을 확인해 주세요.'
+        );
+      }
+      return saveProfilePhotos(slots, defaultLevel, {
+        issuePresignedUrls,
+        saveImages,
+      });
+    });
   };
 
   const saveBlur = (strength: BlurStrength) =>

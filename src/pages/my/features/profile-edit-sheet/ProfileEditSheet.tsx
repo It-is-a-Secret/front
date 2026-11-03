@@ -166,6 +166,7 @@ export const ProfileEditSheet = ({
       return (
         <PhotoUploadResetSheet
           photos={photos}
+          editStatus={editStatus?.photos}
           onClose={onClose}
           isSaving={isSaving}
           onSave={onSavePhotos}

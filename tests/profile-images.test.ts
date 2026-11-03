@@ -6,6 +6,8 @@ import {
   getOccupiedPhotoSlots,
   hasProfilePhotoChanges,
   saveProfilePhotos,
+  canEditProfilePhoto,
+  hasRestrictedPhotoRemoval,
 } from '../src/pages/my/model/profile-images';
 import {getProfilePhotos} from '../src/pages/my/model/profile-edit';
 import {createInitialPhotoSlots} from '../src/pages/onboarding/hooks/usePhotoUploadSlots';
@@ -34,6 +36,65 @@ const signed = {
     ],
   },
 };
+
+test('photo cooldown prevents removing or replacing ready and processing images', () => {
+  const slots = createInitialPhotoSlots(photos);
+  const status = {changeable: false};
+  assert.equal(canEditProfilePhoto(slots[0], status), false);
+  assert.equal(canEditProfilePhoto(slots[1], status), false);
+  assert.equal(hasRestrictedPhotoRemoval(slots, photos, status), false);
+  const removed = slots.map((slot) =>
+    slot.imageId === 10 ? {...slot, imageId: undefined, previewUrl: null} : slot
+  );
+  assert.equal(hasRestrictedPhotoRemoval(removed, photos, status), true);
+  const replacement = slots.map((slot) =>
+    slot.imageId === 20
+      ? {...slot, imageId: undefined, file: new File(['new'], 'new.png')}
+      : slot
+  );
+  assert.equal(hasRestrictedPhotoRemoval(replacement, photos, status), true);
+});
+
+test('photo cooldown still allows sorting and filling an empty position', () => {
+  const slots = createInitialPhotoSlots(photos);
+  const status = {changeable: false};
+  assert.equal(canEditProfilePhoto(slots[2], status), true);
+  assert.equal(
+    hasRestrictedPhotoRemoval([...slots].reverse(), photos, status),
+    false
+  );
+  slots[2].file = new File(['new'], 'new.png');
+  assert.equal(hasRestrictedPhotoRemoval(slots, photos, status), false);
+});
+
+test('failed photos can be removed or replaced during the photo cooldown', () => {
+  const failedPhotos = getProfilePhotos([
+    {...photos[0], processingStatus: 'FAILED'},
+    photos[1],
+  ]);
+  const slots = createInitialPhotoSlots(failedPhotos);
+  const status = {changeable: false};
+  assert.equal(canEditProfilePhoto(slots[0], status), true);
+  slots[0] = {
+    ...slots[0],
+    imageId: undefined,
+    file: new File(['new'], 'new.png'),
+  };
+  assert.equal(hasRestrictedPhotoRemoval(slots, failedPhotos, status), false);
+  slots[1] = {...slots[1], imageId: undefined, previewUrl: null};
+  assert.equal(hasRestrictedPhotoRemoval(slots, failedPhotos, status), true);
+});
+
+test('initial uploads and photos that the server marks changeable can be replaced', () => {
+  const slots = createInitialPhotoSlots(photos);
+  slots[0].imageId = undefined;
+  assert.equal(canEditProfilePhoto(slots[1], {changeable: true}), true);
+  assert.equal(
+    hasRestrictedPhotoRemoval(slots, photos, {changeable: true}),
+    false
+  );
+  assert.equal(hasRestrictedPhotoRemoval(slots, photos, undefined), false);
+});
 
 test('keeps a processing photo with no preview identifiable by its image ID', () => {
   const slots = createInitialPhotoSlots(photos);
