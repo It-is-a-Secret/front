@@ -1,6 +1,14 @@
 import {DragDropProvider} from '@dnd-kit/react';
 
-import {ToastMessage} from '@/pages/my/components/ToastMessage';
+import type {ProfilePhoto} from '@/pages/my/model/profile-edit';
+import {getProfileChangeNote} from '@/pages/my/model/profile-edit';
+import type {ProfileEditStatus} from '@/pages/my/api/type';
+import {
+  canEditProfilePhoto,
+  hasRestrictedPhotoRemoval,
+  hasProfilePhotoChanges,
+} from '@/pages/my/model/profile-images';
+import type {PhotoSlot} from '@/pages/onboarding/hooks/usePhotoUploadSlots';
 import {PhotoUploadSlot} from '@/pages/onboarding/components/PhotoUploadSlot';
 import {
   PHOTO_SLOT_COUNT,
@@ -8,21 +16,22 @@ import {
 } from '@/pages/onboarding/hooks/usePhotoUploadSlots';
 import {Button} from '@/shared/components/Button';
 import {Header} from '@/shared/components/Header';
-import {useToast} from '@/shared/hooks/useToast';
 import {IcSvgLeft} from '@/shared/icons';
 
-const MOCK_LAST_CHANGED_DATE = '2026.00.00';
-
 interface PhotoUploadResetSheetProps {
-  photoUrls: string[];
+  photos: ProfilePhoto[];
+  editStatus?: ProfileEditStatus;
   onClose: () => void;
-  onSubmit: (photoUrls: string[]) => void;
+  isSaving: boolean;
+  onSave: (slots: PhotoSlot[]) => Promise<void>;
 }
 
 export const PhotoUploadResetSheet = ({
-  photoUrls,
+  photos,
+  editStatus,
   onClose,
-  onSubmit,
+  isSaving,
+  onSave,
 }: PhotoUploadResetSheetProps) => {
   const {
     photoSlots,
@@ -30,24 +39,13 @@ export const PhotoUploadResetSheet = ({
     handlePhotoChange,
     handlePhotoRemove,
     handlePhotoSort,
-  } = usePhotoUploadSlots(photoUrls);
-  const {
-    isVisible: isToastVisible,
-    isLeaving: isToastLeaving,
-    showToast,
-    hideToast,
-    fadeDuration,
-  } = useToast();
-
-  const currentPhotoUrls = photoSlots
-    .map((slot) => slot.previewUrl)
-    .filter((previewUrl): previewUrl is string => Boolean(previewUrl));
-  const isChanged = currentPhotoUrls.join('|') !== photoUrls.join('|');
-
-  const handleSubmit = () => {
-    onSubmit(currentPhotoUrls);
-    showToast();
-  };
+  } = usePhotoUploadSlots(photos);
+  const changeNote = getProfileChangeNote(editStatus);
+  const hasRestrictedChanges = hasRestrictedPhotoRemoval(
+    photoSlots,
+    photos,
+    editStatus
+  );
 
   return (
     <section className='flex h-dvh flex-col overflow-hidden'>
@@ -58,15 +56,14 @@ export const PhotoUploadResetSheet = ({
         }
         onClickLeft={onClose}
       />
-
       <div className='mt-[1.6rem] flex flex-1 flex-col'>
         <div className='flex flex-col gap-[1.6rem]'>
           <div className='flex flex-col gap-[1.2rem]'>
             <h2 className='text-body4-16m text-gray-800'>사진 관리</h2>
             <p className='text-body1-15r whitespace-pre-line text-gray-400'>
               업로드된 사진은{' '}
-              <span className='text-body2-15sb text-gray-600'>블러 처리</span>되어
-              저장되며,
+              <span className='text-body2-15sb text-gray-600'>블러 처리</span>
+              되어 저장되며,
               {'\n'}채팅 진행에 따라
               <span className='text-body2-15sb text-gray-600'>
                 업로드 순서대로 한 장씩 공개
@@ -75,22 +72,21 @@ export const PhotoUploadResetSheet = ({
             </p>
           </div>
 
-          <DragDropProvider onDragEnd={handlePhotoSort}>
+          <DragDropProvider
+            onDragEnd={(event) => {
+              if (!isSaving) handlePhotoSort(event);
+            }}>
             <div className='flex w-full flex-wrap justify-center gap-[1rem]'>
               {photoSlots.map((slot, index) => (
                 <PhotoUploadSlot
                   key={slot.id}
                   slot={slot}
                   index={index}
+                  disabled={isSaving}
+                  editDisabled={!canEditProfilePhoto(slot, editStatus)}
                   className='basis-[calc((100%_-_2rem)/3)]'
-                  onPhotoChange={(id, file) => {
-                    handlePhotoChange(id, file);
-                    hideToast();
-                  }}
-                  onPhotoRemove={(id) => {
-                    handlePhotoRemove(id);
-                    hideToast();
-                  }}
+                  onPhotoChange={handlePhotoChange}
+                  onPhotoRemove={handlePhotoRemove}
                 />
               ))}
             </div>
@@ -99,28 +95,34 @@ export const PhotoUploadResetSheet = ({
           <p className='text-caption1-12r whitespace-pre-line text-gray-400'>
             {'JPG · PNG · HEIC 지원\n순서를 드래그로 변경할 수 있어요'}
           </p>
-        </div>
-
-        <div className='relative mt-auto pb-[2rem]'>
-          {isToastVisible && (
-            <div
-              className={`absolute right-0 bottom-[8.2rem] left-0 z-20 transition-opacity ${
-                isToastLeaving ? 'opacity-0' : 'opacity-100'
-              }`}
-              style={{transitionDuration: `${fadeDuration}ms`}}>
-              <ToastMessage message='사진 업로드가 변경되었어요' />
-            </div>
+          {editStatus?.changeable === false && (
+            <p className='text-caption1-12r text-gray-600'>
+              사진은 30일에 한 번만 교체할 수 있어요. 순서 변경, 빈 자리 추가,
+              처리 실패 사진 교체는 가능해요.
+            </p>
           )}
-
+        </div>
+        <div className='relative mt-auto pb-[2rem]'>
           <Button
-            text='저장하기'
-            description={`최근 변경일: ${MOCK_LAST_CHANGED_DATE}`}
-            disabled={!isChanged || isToastVisible}
-            onClick={handleSubmit}
+            text={isSaving ? '저장 중...' : '저장하기'}
+            description={[
+              changeNote,
+              photos.some((photo) => photo.processingStatus === 'FAILED')
+                ? '처리에 실패한 사진은 다시 업로드해 주세요.'
+                : '',
+            ]
+              .filter(Boolean)
+              .join(' / ')}
+            disabled={
+              isSaving ||
+              hasRestrictedChanges ||
+              uploadedPhotoCount === 0 ||
+              !hasProfilePhotoChanges(photoSlots, photos)
+            }
+            onClick={() => void onSave(photoSlots)}
           />
         </div>
       </div>
-
       <span className='sr-only'>
         업로드된 사진 {uploadedPhotoCount}/{PHOTO_SLOT_COUNT}
       </span>

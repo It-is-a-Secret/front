@@ -15,6 +15,8 @@ export const API_ENDPOINT = {
   },
   profile: {
     me: '/api/members/me',
+    update: '/api/members/me/profile',
+    nicknameAvailability: '/api/members/me/nickname-availability',
     images: (feedId: number) => `/api/feeds/${feedId}/images`,
   },
   discovery: {
