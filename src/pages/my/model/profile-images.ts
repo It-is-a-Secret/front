@@ -90,11 +90,23 @@ const getContentType = (file: File) => {
 
 export const buildBlurUpdateRequest = (
   photos: ProfilePhoto[],
-  blurLevel: BlurStrength
+  blurLevel: BlurStrength,
+  editStatus?: ProfileEditStatus
 ): SaveImagesRequest => {
   validateImageCount(photos.length);
   if (!BLUR_STRENGTHS.includes(blurLevel))
     throw new Error('블러 강도를 다시 선택해 주세요.');
+  if (
+    editStatus?.changeable === false &&
+    photos.some(
+      (photo) =>
+        photo.processingStatus !== 'FAILED' && photo.blurLevel !== blurLevel
+    )
+  ) {
+    throw new Error(
+      '블러 강도는 30일에 한 번만 변경할 수 있어요. 다음 변경 가능일을 확인해 주세요.'
+    );
+  }
   const images = photos.map((photo, index) => ({
     id: validateId(photo.id),
     displayOrder: index + 1,

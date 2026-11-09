@@ -136,8 +136,10 @@ export const useProfileEdit = () => {
       if (
         isHTTPError(error) &&
         error.response.status === 409 &&
-        (error.data as {code?: string} | undefined)?.code ===
-          'MEMBER_409_PHOTOS_CHANGE_LIMITED'
+        [
+          'MEMBER_409_PHOTOS_CHANGE_LIMITED',
+          'MEMBER_409_BLUR_LEVEL_CHANGE_LIMITED',
+        ].includes((error.data as {code?: string} | undefined)?.code ?? '')
       ) {
         void queryClient.invalidateQueries({queryKey: QUERY_KEYS.profile.me()});
       }
@@ -181,14 +183,21 @@ export const useProfileEdit = () => {
 
   const saveBlur = (strength: BlurStrength) =>
     saveImageChanges(async () => {
-      const latest = await queryClient.fetchQuery({
-        ...ONBOARDING_QUERY_OPTIONS.IMAGES(),
-        staleTime: 0,
-      });
-      if (!latest.data?.images)
+      const [latestProfile, latestImages] = await Promise.all([
+        queryClient.fetchQuery({...MY_QUERY_OPTIONS.PROFILE(), staleTime: 0}),
+        queryClient.fetchQuery({
+          ...ONBOARDING_QUERY_OPTIONS.IMAGES(),
+          staleTime: 0,
+        }),
+      ]);
+      if (!latestProfile.data || !latestImages.data?.images)
         throw new Error('사진 정보를 다시 불러와 주세요.');
       return saveImages(
-        buildBlurUpdateRequest(getProfilePhotos(latest.data.images), strength)
+        buildBlurUpdateRequest(
+          getProfilePhotos(latestImages.data.images),
+          strength,
+          latestProfile.data.profileEdit?.blurLevel
+        )
       );
     }, '블러 강도가 재설정되었어요.');
 

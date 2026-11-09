@@ -78,7 +78,9 @@ export const ProfileEditSheet = ({
       ? editStatus?.nickName
       : type === 'mbti'
         ? editStatus?.mbti
-        : editStatus?.keywords;
+        : type === 'blurStrength'
+          ? editStatus?.blurLevel
+          : editStatus?.keywords;
   const saveProps = {
     isSaving,
     canSave: status?.changeable === true,
@@ -178,7 +180,7 @@ export const ProfileEditSheet = ({
       <BlurStrengthResetSheet
         photos={photos}
         onClose={onClose}
-        isSaving={isSaving}
+        {...saveProps}
         onSave={onSaveBlur}
       />
     );

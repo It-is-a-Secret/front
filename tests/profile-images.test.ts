@@ -267,6 +267,46 @@ test('metadata errors propagate and never discard selected files', async (t) => 
   assert.ok(slots[0].file);
 });
 
+test('blur cooldown blocks changed normal photos and preserves the existing image metadata', () => {
+  const snapshot = structuredClone(photos);
+  assert.throws(
+    () => buildBlurUpdateRequest(photos, 90, {changeable: false}),
+    /블러 강도는 30일에 한 번만/
+  );
+  assert.deepEqual(photos, snapshot);
+  assert.doesNotThrow(() =>
+    buildBlurUpdateRequest(photos, 90, {changeable: true})
+  );
+});
+
+test('blur cooldown ignores failed photos and does not count an unchanged normal blur', () => {
+  const failedPhotos = getProfilePhotos([
+    {id: 10, displayOrder: 1, blurLevel: 60, processingStatus: 'FAILED'},
+    {id: 20, displayOrder: 2, blurLevel: 80, processingStatus: 'READY'},
+  ]);
+  assert.doesNotThrow(() =>
+    buildBlurUpdateRequest(failedPhotos, 80, {changeable: false})
+  );
+  assert.throws(
+    () => buildBlurUpdateRequest(failedPhotos, 90, {changeable: false}),
+    /30일/
+  );
+});
+
+test('photo and blur cooldowns are independent', () => {
+  const editStatus = {
+    photos: {changeable: false},
+    blurLevel: {changeable: true},
+  };
+  assert.doesNotThrow(() =>
+    buildBlurUpdateRequest(photos, 90, editStatus.blurLevel)
+  );
+  assert.throws(
+    () => buildBlurUpdateRequest(photos, 90, {changeable: false}),
+    /30일/
+  );
+});
+
 test('blur changes keep every existing ID and request server-side regeneration without S3 URLs', () => {
   assert.deepEqual(buildBlurUpdateRequest(photos, 90), {
     images: [

@@ -14,6 +14,8 @@ interface BlurStrengthResetSheetProps {
   photos: ProfilePhoto[];
   onClose: () => void;
   isSaving: boolean;
+  canSave: boolean;
+  changeNote: string;
   onSave: (strength: BlurStrength) => Promise<void>;
 }
 
@@ -21,6 +23,8 @@ export const BlurStrengthResetSheet = ({
   photos,
   onClose,
   isSaving,
+  canSave,
+  changeNote,
   onSave,
 }: BlurStrengthResetSheetProps) => {
   const [selectedBlurStrength, setSelectedBlurStrength] = useState<
@@ -52,14 +56,16 @@ export const BlurStrengthResetSheet = ({
           <BlurStrengthScroll
             value={selectedBlurStrength}
             onChange={setSelectedBlurStrength}
-            disabled={isSaving}
+            disabled={isSaving || !canSave}
           />
         </div>
         <div className='relative mt-auto pb-[2rem]'>
           <Button
             text={isSaving ? '저장 중...' : '저장하기'}
+            description={changeNote}
             disabled={
               isSaving ||
+              !canSave ||
               photos.length === 0 ||
               selectedBlurStrength === undefined ||
               photos.every((photo) => photo.blurLevel === selectedBlurStrength)
