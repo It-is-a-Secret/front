@@ -84,7 +84,7 @@ export const Swipe = ({users}: SwipeProps) => {
                     opacity: isSelected ? 1 : 0,
                     transform: `scale(${isSelected ? 1 : 0.96})`,
                   }}>
-                  <SwipeCard {...user} />
+                  <SwipeCard {...user} isActive={isSelected} />
                 </div>
               </div>
             );
