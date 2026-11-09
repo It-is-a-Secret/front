@@ -6,6 +6,7 @@ import {Navigate, useNavigate, useParams} from 'react-router-dom';
 import {ChatInputBox} from '@/pages/chat/components/ChatInputBox';
 import {ChatImageList} from '@/pages/chat/components/ChatImageList';
 import {ChatRoomState} from '@/pages/chat/components/ChatRoomState';
+import {updateChatRoomPreview} from '@/pages/chat/utils/chat-room-preview';
 import {
   getChatEntryPath,
   getStartChatDraft,
@@ -34,7 +35,22 @@ const NewChatRoomContent = ({feedId}: {feedId: number}) => {
   const submittingRef = useRef(false);
   const mutation = useMutation({
     ...HOME_MUTATION_OPTIONS.START_CHAT(),
-    onSuccess: (response, variables) => {
+    onSuccess: async (response, variables) => {
+      await queryClient.cancelQueries({queryKey: QUERY_KEYS.chat.rooms()});
+      if (response.data.created && response.data.firstMessage) {
+        updateChatRoomPreview(
+          queryClient,
+          response.data.roomId,
+          response.data.firstMessage,
+          {
+            roomId: response.data.roomId,
+            partnerNickname: detailQuery.data?.data?.nickName,
+            roomStatus: 'ACTIVE',
+            progressStatus: 'MATCHED',
+            unreadCount: 0,
+          }
+        );
+      }
       // 첫 메시지는 REST에서 이미 저장하므로 STOMP로 다시 보내지 않습니다.
       void queryClient.invalidateQueries({queryKey: QUERY_KEYS.chat.all});
       void queryClient.invalidateQueries({queryKey: QUERY_KEYS.discovery.all});
