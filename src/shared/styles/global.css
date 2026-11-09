@@ -1,0 +1,33 @@
+@import 'tailwindcss';
+@import './color.css';
+@import './typography.css';
+
+html,
+body {
+  width: 100%;
+  font-size: 62.5%;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  background-color: var(--color-background);
+  font-family: Pretendard, system-ui, sans-serif;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+#root {
+  width: 100%;
+  min-width: 375px;
+  max-width: 430px;
+  min-height: 100dvh;
+  margin: 0 auto;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
