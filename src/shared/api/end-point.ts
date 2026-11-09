@@ -21,6 +21,7 @@ export const API_ENDPOINT = {
   },
   discovery: {
     list: '/api/discovery',
+    detail: (feedId: number) => `/api/discovery/feeds/${feedId}`,
     startChat: (feedId: number) => `/api/discovery/feeds/${feedId}/chat`,
   },
   chat: {
