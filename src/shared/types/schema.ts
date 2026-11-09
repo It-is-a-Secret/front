@@ -125,7 +125,9 @@ export interface paths {
          *     - 기존 사진 블러 변경: id와 다른 blurLevel. 서버가 원본을 새 key로 복사해 블러본을 다시 만들며, 응답은 새 variantUrl과 PROCESSING이다. 별도 재처리 API는 없다. blurLevel 생략 시 현재 값 유지.
          *     - 새 사진: objectKey. 원본 업로드가 끝난 key여야 하며 PROCESSING으로 생성된다. blurLevel은 Presigned 발급 때 지정한 값이 적용되고, 보낸다면 그 값과 같아야 한다(FEED_IMAGE_400_BLUR_LEVEL_MISMATCH).
          *
-         *     원본 교체 30일 제한: 사진을 처음 5장 채운 뒤부터 적용한다(처음 5장을 채운 저장 자체는 제한을 시작하지 않음). 이후 기존 원본(처리 실패 FAILED 제외)을 하나라도 빼는 저장은 원본 교체로 보고 30일에 한 번만 허용한다(한 요청에서 여러 장을 바꿔도 1회). 빈 자리 추가·순서 변경·블러 변경·FAILED 사진 교체는 제한하지 않는다. 제한 중이면 409 MEMBER_409_PHOTOS_CHANGE_LIMITED이고, 다음 교체 가능 시각은 내 프로필의 profileEdit.photos에 있다.
+         *     원본 교체 30일 제한: 사진을 처음 5장 채운 뒤부터 적용한다(처음 5장을 채운 저장 자체는 제한을 시작하지 않음). 이후 기존 원본(처리 실패 FAILED 제외)을 하나라도 빼는 저장은 원본 교체로 보고 30일에 한 번만 허용한다(한 요청에서 여러 장을 바꿔도 1회). 빈 자리 추가·순서 변경·FAILED 사진 교체는 제한하지 않는다. 제한 중이면 409 MEMBER_409_PHOTOS_CHANGE_LIMITED이고, 다음 교체 가능 시각은 내 프로필의 profileEdit.photos에 있다.
+         *
+         *     블러 강도 변경 30일 제한(#118): 원본 교체와 같이 처음 5장을 채운 뒤부터, 원본 교체와는 별도 쿨다운으로 적용한다. 유지하는 기존 사진(FAILED 제외)의 blurLevel을 현재와 다른 값으로 바꾸는 저장을 블러 강도 변경으로 보고 30일에 한 번만 허용한다(여러 장을 바꿔도 1회). 새로 올리는 사진의 blurLevel은 해당하지 않는다. 제한 중이면 409 MEMBER_409_BLUR_LEVEL_CHANGE_LIMITED이고, 다음 변경 가능 시각은 profileEdit.blurLevel에 있다.
          *
          *     인증 주체에서 피드를 도출하므로 feedId를 받지 않는다. 다른 회원 사진 id는 FEED_IMAGE_404_NOT_FOUND, id/objectKey 조합 오류는 FEED_IMAGE_400_INVALID_REFERENCE, 같은 사진 중복 지정은 FEED_IMAGE_400_DUPLICATE_REFERENCE, 업로드되지 않은 objectKey는 FEED_IMAGE_400_ORIGINAL_NOT_UPLOADED다.
          */
@@ -281,7 +283,7 @@ export interface paths {
         };
         /**
          * 내 프로필 조회
-         * @description 닉네임·생년·학과·MBTI·관심사·가입 단계와, 수정 가능 항목(닉네임·MBTI·관심사)별 30일 변경 제한 상태(profileEdit: lastChangedAt·nextChangeableAt·changeable)를 반환한다. 온보딩 이후 변경한 적 없는 항목은 두 시각이 null이고 즉시 변경 가능하다. 온보딩 미완료 회원은 수정 대상이 아니므로 profileEdit이 null이다.
+         * @description 닉네임·생년·학과·MBTI·관심사·가입 단계와, 수정 가능 항목(닉네임·MBTI·관심사·사진 교체·블러 강도)별 30일 변경 제한 상태(profileEdit: lastChangedAt·nextChangeableAt·changeable)를 반환한다. 온보딩 이후 변경한 적 없는 항목은 두 시각이 null이고 즉시 변경 가능하다. 온보딩 미완료 회원은 수정 대상이 아니므로 profileEdit이 null이다.
          */
         get: operations["getMyProfile"];
         put?: never;
@@ -598,6 +600,7 @@ export interface components {
             mbti?: components["schemas"]["ProfileEditItemStatus"];
             keywords?: components["schemas"]["ProfileEditItemStatus"];
             photos?: components["schemas"]["ProfileEditItemStatus"];
+            blurLevel?: components["schemas"]["ProfileEditItemStatus"];
         };
         ReportRequest: {
             /** Format: int64 */
@@ -980,6 +983,29 @@ export interface components {
              * @example blur
              */
             nickName?: string;
+            /**
+             * Format: int32
+             * @description 출생 연도(온보딩 전이면 null)
+             * @example 2001
+             */
+            birthYear?: number;
+            /**
+             * @description 학과 코드(온보딩 전이면 null)
+             * @example COMPUTER_ENGINEERING
+             * @enum {string}
+             */
+            department?: "THEOLOGY" | "CHRISTIAN_EDUCATION" | "KOREAN_LANGUAGE" | "ENGLISH" | "RUSSIAN" | "CHINESE" | "EARLY_CHILDHOOD_EDUCATION" | "PERFORMING_ARTS" | "MUSIC" | "DIGITAL_MEDIA_DESIGN" | "COSMETIC_INVENTION_DESIGN" | "BEAUTY_MEDICAL_DESIGN" | "GAME_CONTENT" | "PRACTICAL_MUSIC" | "SPORTS_SCIENCE" | "SPORTS_APPLIED_INDUSTRY" | "GLOBAL_BUSINESS" | "PUBLIC_ADMINISTRATION" | "TOURISM_MANAGEMENT" | "PUBLIC_GOVERNANCE" | "TOURISM" | "FOOD_NUTRITION" | "COMPUTER_ENGINEERING" | "INFORMATION_ELECTRICAL_ELECTRONIC" | "STATISTICS_DATA_SCIENCE" | "SOFTWARE" | "URBAN_INFORMATION_ENGINEERING" | "ENVIRONMENTAL_ENERGY_ENGINEERING" | "AI_CONVERGENCE" | "SMART_CITY_ENGINEERING" | "MARINE_BIO_ENGINEERING" | "CONVERGENCE_SOFTWARE";
+            /**
+             * @description 학과 표시명(온보딩 전이면 null)
+             * @example 컴퓨터공학과
+             */
+            departmentLabel?: string;
+            /**
+             * @description MBTI(모름이거나 온보딩 전이면 null)
+             * @example INFP
+             * @enum {string}
+             */
+            mbti?: "ISTJ" | "ISFJ" | "INFJ" | "INTJ" | "ISTP" | "ISFP" | "INFP" | "INTP" | "ESTP" | "ESFP" | "ENFP" | "ENTP" | "ESTJ" | "ESFJ" | "ENFJ" | "ENTJ";
             /**
              * Format: date-time
              * @description 차단한 시각(한국 시간, +09:00)

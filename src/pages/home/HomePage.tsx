@@ -25,8 +25,9 @@ export const HomePage = () => {
   const hasUsers = users.length > 0;
 
   return (
-    <main className='flex min-h-dvh flex-col'>
+    <main className='flex h-dvh flex-col pb-[12rem]'>
       <Header
+        className='shrink-0'
         title={
           <h1 className='text-bold-24 text-gray-800'>
             Blur<span className='text-primary'>Some</span>
@@ -35,11 +36,11 @@ export const HomePage = () => {
       />
 
       {discoveryQuery.isPending ? (
-        <div className='text-body1-15r flex flex-1 items-center justify-center pb-[12rem] text-gray-600'>
+        <div className='text-body1-15r flex min-h-0 flex-1 items-center justify-center text-gray-600'>
           프로필을 불러오는 중...
         </div>
       ) : discoveryQuery.isError ? (
-        <div className='flex flex-1 items-center justify-center pb-[12rem]'>
+        <div className='flex min-h-0 flex-1 items-center justify-center'>
           <EmptyState
             image={<img src='noPeople.png' alt='' />}
             imageClassName='size-[20.7rem]'
@@ -48,11 +49,11 @@ export const HomePage = () => {
           />
         </div>
       ) : hasUsers ? (
-        <div className='mt-[2.5rem] h-[calc(100dvh-5.4rem-2.5rem-12rem)]'>
+        <div className='mt-[2.5rem] min-h-0 flex-1'>
           <Swipe users={users} />
         </div>
       ) : (
-        <div className='flex flex-1 items-center justify-center pb-[12rem]'>
+        <div className='flex min-h-0 flex-1 items-center justify-center'>
           <EmptyState
             image={<img src='noPeople.png' alt='' />}
             imageClassName='size-[20.7rem]'

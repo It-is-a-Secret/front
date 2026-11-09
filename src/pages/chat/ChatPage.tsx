@@ -41,7 +41,7 @@ export const ChatPage = () => {
   }, [navigate, showToast, toastMessage]);
 
   return (
-    <main className='relative flex min-h-dvh flex-col'>
+    <main className='relative flex min-h-dvh flex-col pb-[12rem]'>
       <Header
         title={
           <h1 className='text-bold-24 text-gray-800'>
@@ -53,11 +53,11 @@ export const ChatPage = () => {
       {roomsQuery.isPending ? (
         <div
           role='status'
-          className='text-body1-15r flex flex-1 items-center justify-center pb-[12rem] text-gray-600'>
+          className='text-body1-15r flex flex-1 items-center justify-center text-gray-600'>
           채팅 목록을 불러오고 있어요.
         </div>
       ) : roomsQuery.isError ? (
-        <div className='flex flex-1 flex-col items-center justify-center gap-[2.4rem] px-[2rem] pb-[12rem]'>
+        <div className='flex flex-1 flex-col items-center justify-center gap-[2.4rem] px-[2rem]'>
           <p role='alert' className='text-body1-15r text-center text-gray-600'>
             채팅 목록을 불러오지 못했어요.
           </p>
@@ -70,13 +70,13 @@ export const ChatPage = () => {
           </div>
         </div>
       ) : hasChatRooms ? (
-        <ul className='pb-[12rem]'>
+        <ul>
           {chatRooms.map((chatRoom) => (
             <ChatListItem key={chatRoom.roomId} {...chatRoom} />
           ))}
         </ul>
       ) : (
-        <div className='flex flex-1 items-center justify-center pb-[12rem]'>
+        <div className='flex flex-1 items-center justify-center'>
           <EmptyState
             image={<img src='nochat.png' alt='' />}
             imageClassName='w-[18.6rem] h-[19.9rem]'

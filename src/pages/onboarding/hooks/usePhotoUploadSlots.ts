@@ -10,27 +10,55 @@ export interface PhotoSlot {
   id: string;
   file: File | null;
   previewUrl: string | null;
+  objectKey?: string;
+  imageId?: number;
+  blurLevel?: number;
+  processingStatus?: 'PROCESSING' | 'READY' | 'FAILED';
 }
 
+type InitialPhoto =
+  | string
+  | (Pick<
+      PhotoSlot,
+      'previewUrl' | 'objectKey' | 'blurLevel' | 'processingStatus'
+    > & {id?: number});
+
 export const createInitialPhotoSlots = (
-  initialPreviewUrls: readonly string[] = []
+  initialPhotos: readonly InitialPhoto[] = []
 ): PhotoSlot[] =>
-  Array.from({length: PHOTO_SLOT_COUNT}, (_, index) => ({
-    id: `photo-slot-${index + 1}`,
-    file: null,
-    previewUrl: initialPreviewUrls[index] ?? null,
-  }));
+  Array.from({length: PHOTO_SLOT_COUNT}, (_, index) => {
+    const photo = initialPhotos[index];
+
+    return {
+      id: `photo-slot-${index + 1}`,
+      file: null,
+      previewUrl:
+        typeof photo === 'string' ? photo : (photo?.previewUrl ?? null),
+      ...(photo && typeof photo !== 'string'
+        ? {
+            objectKey: photo.objectKey,
+            imageId: photo.id,
+            blurLevel: photo.blurLevel,
+            processingStatus: photo.processingStatus,
+          }
+        : {}),
+    };
+  });
 
 export const usePhotoUploadSlots = (
-  initialPreviewUrls: readonly string[] = []
+  initialPhotos: readonly InitialPhoto[] = []
 ) => {
   const [photoSlots, setPhotoSlots] = useState<PhotoSlot[]>(() =>
-    createInitialPhotoSlots(initialPreviewUrls)
+    createInitialPhotoSlots(initialPhotos)
   );
   const previewUrlsRef = useRef<Set<string>>(new Set());
 
   const uploadedPhotoCount = photoSlots.filter(
-    (slot) => slot.previewUrl
+    (slot) =>
+      slot.file ||
+      slot.previewUrl ||
+      slot.objectKey ||
+      slot.imageId !== undefined
   ).length;
 
   useEffect(() => {
@@ -69,6 +97,9 @@ export const usePhotoUploadSlots = (
           ...slot,
           file,
           previewUrl,
+          imageId: undefined,
+          objectKey: undefined,
+          processingStatus: undefined,
         };
       })
     );
@@ -89,6 +120,9 @@ export const usePhotoUploadSlots = (
           ...slot,
           file: null,
           previewUrl: null,
+          objectKey: undefined,
+          imageId: undefined,
+          processingStatus: undefined,
         };
       })
     );

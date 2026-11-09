@@ -5,7 +5,7 @@ import {BottomNavBar} from '@/shared/components/BottomNavBar';
 
 export const BottomNavLayout = () => {
   return (
-    <section className='min-h-dvh pb-[10rem]'>
+    <section className='min-h-dvh'>
       <Layout>
         <Outlet />
       </Layout>

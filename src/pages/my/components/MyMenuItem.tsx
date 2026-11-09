@@ -30,10 +30,11 @@ export const MyMenuItem = (props: MyMenuItemProps) => {
 
       {props.type === 'toggle' ? (
         <Switch.Root
+          aria-label={props.label}
           checked={props.checked}
           onCheckedChange={props.onCheckedChange}
-          className='bg-primary-400 data-[state=checked]:bg-primary-400 border-primary-600 relative h-[2.8rem] w-[5.2rem] rounded-full border transition-colors'>
-          <Switch.Thumb className='bg-primary block size-[2.4rem] translate-x-[0.3rem] rounded-full transition-transform data-[state=checked]:translate-x-[2.9rem]' />
+          className='relative h-[2.8rem] w-[5.2rem] rounded-full border border-gray-200 bg-gray-100 transition-colors data-[state=checked]:border-primary-600 data-[state=checked]:bg-primary-400'>
+          <Switch.Thumb className='block size-[2.4rem] translate-x-[0.3rem] rounded-full bg-gray-400 transition-[transform,background-color] data-[state=checked]:translate-x-[2.3rem] data-[state=checked]:bg-primary' />
         </Switch.Root>
       ) : (
         <IcSvgRight className='size-[2.4rem]' />
