@@ -20,6 +20,26 @@ const CATEGORY_CODES = [
   'VALUES',
 ];
 
+test('rejects invalid nicknames restored from an onboarding draft before submission', () => {
+  const draft = createInitialOnboardingDraft();
+  draft.department = '컴퓨터공학과';
+  draft.selectedGender = 'male';
+  for (const nickname of [
+    '친구!',
+    'test_name',
+    '이름🙂',
+    '띄어 쓰기',
+    'a',
+    'abcdefghijklm',
+  ]) {
+    draft.nickname = nickname;
+    assert.throws(
+      () => buildCompleteOnboardingRequest(draft, {data: []}),
+      /닉네임은 한글, 영문, 숫자로 2~12자/
+    );
+  }
+});
+
 test('builds the completion request with department code and catalog tag IDs', () => {
   const draft = createInitialOnboardingDraft();
   draft.nickname = '  새친구  ';

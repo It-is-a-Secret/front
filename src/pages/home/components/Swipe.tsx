@@ -1,5 +1,5 @@
 import useEmblaCarousel from 'embla-carousel-react';
-import {useCallback, useEffect, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 
 import {SwipeCard} from '@/pages/home/components/SwipeCard';
 import {IcSvgLeft} from '@/shared/icons';
@@ -15,6 +15,10 @@ export interface SwipeUser {
 
 interface SwipeProps {
   users: SwipeUser[];
+  hasMore: boolean;
+  isLoadingMore: boolean;
+  isLoadMoreError: boolean;
+  onLoadMore: () => void;
 }
 
 const EMBLA_OPTIONS = {
@@ -23,15 +27,31 @@ const EMBLA_OPTIONS = {
   loop: false,
 } as const;
 
-export const Swipe = ({users}: SwipeProps) => {
+export const Swipe = ({
+  users,
+  hasMore,
+  isLoadingMore,
+  isLoadMoreError,
+  onLoadMore,
+}: SwipeProps) => {
   const [emblaRef, emblaApi] = useEmblaCarousel(EMBLA_OPTIONS);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [canMovePrev, setCanMovePrev] = useState(false);
   const [canMoveNext, setCanMoveNext] = useState(false);
+  const pendingNextIndex = useRef<number | null>(null);
 
   const updateCarouselState = useCallback(() => {
     if (!emblaApi) {
       return;
+    }
+
+    if (
+      pendingNextIndex.current !== null &&
+      emblaApi.scrollSnapList().length > pendingNextIndex.current
+    ) {
+      const index = pendingNextIndex.current;
+      pendingNextIndex.current = null;
+      emblaApi.scrollTo(index);
     }
 
     setSelectedIndex(emblaApi.selectedScrollSnap());
@@ -54,13 +74,37 @@ export const Swipe = ({users}: SwipeProps) => {
     };
   }, [emblaApi, updateCarouselState]);
 
+  useEffect(() => {
+    if (
+      selectedIndex >= users.length - 2 &&
+      hasMore &&
+      !isLoadingMore &&
+      !isLoadMoreError
+    ) {
+      onLoadMore();
+    }
+  }, [
+    selectedIndex,
+    users.length,
+    hasMore,
+    isLoadingMore,
+    isLoadMoreError,
+    onLoadMore,
+  ]);
+
   const handlePrev = useCallback(() => {
+    pendingNextIndex.current = null;
     emblaApi?.scrollPrev();
   }, [emblaApi]);
 
   const handleNext = useCallback(() => {
-    emblaApi?.scrollNext();
-  }, [emblaApi]);
+    if (emblaApi?.canScrollNext()) {
+      emblaApi.scrollNext();
+    } else if (hasMore) {
+      pendingNextIndex.current = selectedIndex + 1;
+      if (!isLoadingMore) onLoadMore();
+    }
+  }, [emblaApi, hasMore, selectedIndex, isLoadingMore, onLoadMore]);
 
   return (
     <div className='relative h-full w-full overflow-hidden'>
@@ -103,8 +147,9 @@ export const Swipe = ({users}: SwipeProps) => {
 
       <button
         type='button'
-        aria-label='다음 카드'
-        disabled={!canMoveNext}
+        aria-label={isLoadMoreError ? '다음 카드 다시 불러오기' : '다음 카드'}
+        aria-busy={isLoadingMore}
+        disabled={!canMoveNext && !hasMore}
         className='absolute top-1/2 right-[1.2rem] z-40 flex size-[3.2rem] -translate-y-1/2 items-center justify-center text-gray-400 disabled:opacity-30'
         onClick={handleNext}>
         <IcSvgLeft className='size-[2.4rem] rotate-180' />

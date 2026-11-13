@@ -9,6 +9,7 @@ import type {
   GetKeywordCatalogResponse,
 } from '@/pages/onboarding/api/type';
 import type {OnboardingDraft} from '@/pages/onboarding/model/onboarding-draft';
+import {isValidNickname} from '@/shared/lib/nickname';
 
 type DepartmentCode = CompleteOnboardingRequest['department'];
 
@@ -61,7 +62,11 @@ export const buildCompleteOnboardingRequest = (
   const nickName = draft.nickname.trim();
   const department = DEPARTMENT_CODES[draft.department as DepartmentName];
 
-  if (!nickName || !draft.selectedGender || !department) {
+  if (!isValidNickname(nickName)) {
+    throw new Error('닉네임은 한글, 영문, 숫자로 2~12자 입력해 주세요.');
+  }
+
+  if (!draft.selectedGender || !department) {
     throw new Error('기본 정보를 다시 확인해 주세요.');
   }
 

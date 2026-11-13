@@ -28,11 +28,13 @@ const VerificationCodeInput = ({
     const nextDigit = nextValue.replace(/\D/g, '').slice(-1);
     const nextCode = [...code];
 
-    nextCode[index] = nextDigit;
-    onChange(nextCode.join('').trim());
+    nextCode[index] = nextDigit || ' ';
+    onChange(nextCode.join('').trimEnd());
 
     if (nextDigit && index < length - 1) {
       inputRefs.current[index + 1]?.focus();
+    } else if (!nextDigit && index > 0) {
+      inputRefs.current[index - 1]?.focus();
     }
   };
 
@@ -40,8 +42,10 @@ const VerificationCodeInput = ({
     index: number,
     event: KeyboardEvent<HTMLInputElement>
   ) => {
-    if (event.key === 'Backspace' && !code[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
+    if (event.key === 'Backspace') {
+      event.preventDefault();
+      const deleteIndex = code[index].trim() ? index : Math.max(0, index - 1);
+      updateCode(deleteIndex, '');
     }
   };
 
@@ -69,6 +73,7 @@ const VerificationCodeInput = ({
           onChange={(event) => updateCode(index, event.target.value)}
           onKeyDown={(event) => handleKeyDown(index, event)}
           onPaste={handlePaste}
+          onFocus={(event) => event.target.select()}
           maxLength={1}
           inputMode='numeric'
           disabled={disabled}

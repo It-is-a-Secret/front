@@ -115,8 +115,7 @@ export const buildProfileUpdateRequest = (
   };
 };
 
-export const isValidNickname = (nickname: string) =>
-  /^[가-힣a-zA-Z0-9]{2,12}$/.test(nickname);
+export {isValidNickname} from '@/shared/lib/nickname';
 
 const formatDate = (value: string) => {
   const date = new Date(value);

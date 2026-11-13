@@ -4,7 +4,6 @@ export const AUTH_EMAIL_DOMAIN = '@gs.anyang.ac.kr';
 
 export const AUTH_MOCK = {
   emailId: 'abcde',
-  attemptCount: 1,
   maxAttemptCount: 5,
   expireSeconds: 10 * 60,
 } as const;
