@@ -38,6 +38,7 @@ import {Button} from '@/shared/components/Button';
 import {Header} from '@/shared/components/Header';
 import {useToast} from '@/shared/hooks/useToast';
 import {IcSvgLeft} from '@/shared/icons';
+import {isValidNickname} from '@/shared/lib/nickname';
 
 export const OnboardingPage = () => {
   const navigate = useNavigate();
@@ -122,7 +123,7 @@ export const OnboardingPage = () => {
     ? (selectedInterests[interestStep]?.length ?? 0)
     : 0;
   const isNextDisabled =
-    (step === 'nickname' && nickname.length === 0) ||
+    (step === 'nickname' && !isValidNickname(nickname)) ||
     (step === 'gender' && !selectedGender) ||
     (step === 'department' && department.length === 0) ||
     (step === 'mbti' && !selectedMbti) ||
@@ -197,6 +198,7 @@ export const OnboardingPage = () => {
   };
 
   const handleNext = () => {
+    if (isNextDisabled || isSubmitting) return;
     if (step === 'photoUpload' || step === 'complete') {
       void handleComplete();
       return;
