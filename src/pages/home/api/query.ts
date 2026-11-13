@@ -1,6 +1,7 @@
-import {mutationOptions, queryOptions} from '@tanstack/react-query';
+import {mutationOptions} from '@tanstack/react-query';
 
-import {api, API_ENDPOINT, QUERY_KEYS} from '@/shared/api';
+import {api, API_ENDPOINT} from '@/shared/api';
+import {discoveryInfiniteQueryOptions} from '../model/discovery-pagination';
 
 import type {
   GetDiscoveryParams,
@@ -36,11 +37,7 @@ const startChat = async ({feedId, body}: StartChatVariables) => {
 };
 
 export const HOME_QUERY_OPTIONS = {
-  DISCOVERY: (params?: GetDiscoveryParams) =>
-    queryOptions({
-      queryKey: QUERY_KEYS.discovery.list(params?.page, params?.size),
-      queryFn: () => getDiscovery(params),
-    }),
+  DISCOVERY: () => discoveryInfiniteQueryOptions(getDiscovery),
 };
 
 export const HOME_MUTATION_OPTIONS = {

@@ -156,22 +156,12 @@ const NewChatRoomContent = ({feedId}: {feedId: number}) => {
           <div
             role='alert'
             className='text-body1-15r px-[2rem] py-[0.8rem] text-center text-gray-600'>
-            {errorStatus === 403
-              ? '온보딩을 완료해야 채팅을 시작할 수 있어요.'
-              : errorStatus === 404 || errorStatus === 409
-                ? '대화할 수 없는 상대예요. 홈에서 다시 확인해 주세요.'
-                : errorStatus === 400
-                  ? '보낼 메시지를 확인해 주세요.'
-                  : '전송 결과를 확인하지 못했어요. 연결을 확인하고 다시 시도해 주세요.'}
-            {errorStatus === 403 && (
-              <button
-                type='button'
-                className='text-primary block w-full py-[0.8rem]'
-                onClick={() => navigate('/onboarding')}>
-                프로필 만들기
-              </button>
-            )}
-            {(errorStatus === 404 || errorStatus === 409) && (
+            {cannotStart
+              ? '지금은 대화를 시작할 수 없어요. 홈에서 다시 확인해 주세요.'
+              : errorStatus === 400
+                ? '보낼 메시지를 확인해 주세요.'
+                : '전송 결과를 확인하지 못했어요. 연결을 확인하고 다시 시도해 주세요.'}
+            {cannotStart && (
               <button
                 type='button'
                 className='text-primary block w-full py-[0.8rem]'

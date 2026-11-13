@@ -17,6 +17,7 @@ import {
   ONBOARDING_STEPS,
 } from '@/pages/onboarding/constants/constants';
 import {getOnboardingDraftStep} from '@/pages/onboarding/model/onboarding-draft-storage';
+import {Button} from '@/shared/components/Button';
 import {Header} from '@/shared/components/Header';
 import {
   IcSvgBell,
@@ -33,12 +34,12 @@ export const MyPage = () => {
     ...MY_QUERY_OPTIONS.PROFILE(),
     refetchOnMount: 'always',
   });
+  const profile = profileQuery.data?.data;
   const memberId =
     profileQuery.isFetchedAfterMount && !profileQuery.isError
-      ? profileQuery.data?.data?.id
+      ? profile?.id
       : undefined;
-  const onboardingCompleted =
-    profileQuery.data?.data?.registrationStatus === 'COMPLETED';
+  const onboardingCompleted = profile?.registrationStatus === 'COMPLETED';
   const savedStep = useMemo(
     () => (memberId === undefined ? null : getOnboardingDraftStep(memberId)),
     [memberId]
@@ -70,18 +71,32 @@ export const MyPage = () => {
         </div>
       )}
       <section className='mt-[1.6rem] shrink-0'>
-        <Profile
-          nickname='행복한코딩러'
-          birthYear='00'
-          gender='남'
-          department='소프트웨어학과'
-        />
-        <button
-          type='button'
-          onClick={() => navigate('/my/profile-edit')}
-          className='bg-primary-600 text-body2-15sb text-white-800 mt-[1.6rem] w-full rounded-[16px] py-[1.35rem]'>
-          프로필 수정
-        </button>
+        {profileQuery.isPending ? (
+          <p role='status' className='text-body1-15r text-gray-600'>
+            프로필을 불러오는 중...
+          </p>
+        ) : profileQuery.isError || !profile ? (
+          <div className='flex flex-col gap-[1.6rem]'>
+            <p role='alert' className='text-body1-15r text-gray-800'>
+              프로필을 불러오지 못했어요.
+            </p>
+            <Button
+              text={profileQuery.isFetching ? '불러오는 중...' : '다시 시도'}
+              disabled={profileQuery.isFetching}
+              onClick={() => void profileQuery.refetch()}
+            />
+          </div>
+        ) : (
+          <>
+            <Profile profile={profile} />
+            <button
+              type='button'
+              onClick={() => navigate('/my/profile-edit')}
+              className='bg-primary-600 text-body2-15sb text-white-800 mt-[1.6rem] w-full rounded-[16px] py-[1.35rem]'>
+              프로필 수정
+            </button>
+          </>
+        )}
         <div className='text-body1-15r mt-[2.8rem] mb-[0.8rem]'>개인설정</div>
         <div className='flex flex-col gap-[0.8rem]'>
           <MyMenuItem
