@@ -75,7 +75,7 @@ export interface paths {
         put?: never;
         /**
          * 학교 이메일 인증 코드 발송
-         * @description 안양대학교 이메일(@gs.anyang.ac.kr)로 6자리 인증 코드를 발송한다. 이메일은 공백을 지우고 소문자로 비교·저장한다. 다른 회원이 사용 중이면 409 SCHOOL_EMAIL_DUPLICATED, 탈퇴 후 30일이 지나지 않은 회원의 이메일이면 409 REJOIN_RESTRICTED다.
+         * @description 안양대학교 이메일(@gs.anyang.ac.kr)로 6자리 인증 코드를 발송한다. 이메일은 공백을 지우고 소문자로 비교·저장한다. 다른 회원이 사용 중이면 409 SCHOOL_EMAIL_DUPLICATED다. 탈퇴 회원의 이메일은 바로 다시 인증할 수 있다(재가입 제한 임시 해제, #124).
          */
         post: operations["sendSchoolEmailCode"];
         delete?: never;
@@ -125,7 +125,9 @@ export interface paths {
          *     - 기존 사진 블러 변경: id와 다른 blurLevel. 서버가 원본을 새 key로 복사해 블러본을 다시 만들며, 응답은 새 variantUrl과 PROCESSING이다. 별도 재처리 API는 없다. blurLevel 생략 시 현재 값 유지.
          *     - 새 사진: objectKey. 원본 업로드가 끝난 key여야 하며 PROCESSING으로 생성된다. blurLevel은 Presigned 발급 때 지정한 값이 적용되고, 보낸다면 그 값과 같아야 한다(FEED_IMAGE_400_BLUR_LEVEL_MISMATCH).
          *
-         *     원본 교체 30일 제한: 사진을 처음 5장 채운 뒤부터 적용한다(처음 5장을 채운 저장 자체는 제한을 시작하지 않음). 이후 기존 원본(처리 실패 FAILED 제외)을 하나라도 빼는 저장은 원본 교체로 보고 30일에 한 번만 허용한다(한 요청에서 여러 장을 바꿔도 1회). 빈 자리 추가·순서 변경·블러 변경·FAILED 사진 교체는 제한하지 않는다. 제한 중이면 409 MEMBER_409_PHOTOS_CHANGE_LIMITED이고, 다음 교체 가능 시각은 내 프로필의 profileEdit.photos에 있다.
+         *     원본 교체 30일 제한: 사진을 처음 5장 채운 뒤부터 적용한다(처음 5장을 채운 저장 자체는 제한을 시작하지 않음). 이후 기존 원본(처리 실패 FAILED 제외)을 하나라도 빼는 저장은 원본 교체로 보고 30일에 한 번만 허용한다(한 요청에서 여러 장을 바꿔도 1회). 빈 자리 추가·순서 변경·FAILED 사진 교체는 제한하지 않는다. 제한 중이면 409 MEMBER_409_PHOTOS_CHANGE_LIMITED이고, 다음 교체 가능 시각은 내 프로필의 profileEdit.photos에 있다.
+         *
+         *     블러 강도 변경 30일 제한(#118): 원본 교체와 같이 처음 5장을 채운 뒤부터, 원본 교체와는 별도 쿨다운으로 적용한다. 유지하는 기존 사진(FAILED 제외)의 blurLevel을 현재와 다른 값으로 바꾸는 저장을 블러 강도 변경으로 보고 30일에 한 번만 허용한다(여러 장을 바꿔도 1회). 새로 올리는 사진의 blurLevel은 해당하지 않는다. 제한 중이면 409 MEMBER_409_BLUR_LEVEL_CHANGE_LIMITED이고, 다음 변경 가능 시각은 profileEdit.blurLevel에 있다.
          *
          *     인증 주체에서 피드를 도출하므로 feedId를 받지 않는다. 다른 회원 사진 id는 FEED_IMAGE_404_NOT_FOUND, id/objectKey 조합 오류는 FEED_IMAGE_400_INVALID_REFERENCE, 같은 사진 중복 지정은 FEED_IMAGE_400_DUPLICATE_REFERENCE, 업로드되지 않은 objectKey는 FEED_IMAGE_400_ORIGINAL_NOT_UPLOADED다.
          */
@@ -167,7 +169,7 @@ export interface paths {
         put?: never;
         /**
          * 피드로 1:1 대화 시작
-         * @description 탐색에서 발견한 상대의 feedId로 대화를 시작한다. 첫 접촉이면 방을 만들고 첫 메시지를 전송한 뒤 200(created=true, firstMessage 포함), 이미 채팅 중(ACTIVE)이면 보낸 메시지를 저장하지 않고 기존 방으로 안내한다(200, created=false, firstMessage=null). 이미 채팅 중인지는 탐색 카드의 chatRoom으로 미리 알 수 있으니, 그 경우 이 API 대신 roomId로 바로 이동한다. 대상 피드 없음 404, 자기 자신 400, 내 피드 미완성 403, 이성 아님·대상 피드 비공개·비활성 409(NOT_ELIGIBLE), 차단 관계 409(BLOCKED), 종료된 관계 409(RELATIONSHIP_CLOSED), 검토 중 409(RELATIONSHIP_UNDER_REVIEW).
+         * @description 탐색에서 발견한 상대의 feedId로 대화를 시작한다. 첫 접촉이면 방을 만들고 첫 메시지를 전송한 뒤 200(created=true, firstMessage 포함), 이미 채팅 중(ACTIVE)이면 보낸 메시지를 저장하지 않고 기존 방으로 안내한다(200, created=false, firstMessage=null). 이미 채팅 중인지는 탐색 카드의 chatRoom으로 미리 알 수 있으니, 그 경우 이 API 대신 roomId로 바로 이동한다. 대상 피드 없음 404, 자기 자신 400, 온보딩 미완료 403(ONBOARDING_REQUIRED), 내 피드 미완성 403, 이성 아님·대상 피드 비공개·비활성 409(NOT_ELIGIBLE), 차단 관계 409(BLOCKED), 종료된 관계 409(RELATIONSHIP_CLOSED), 검토 중 409(RELATIONSHIP_UNDER_REVIEW).
          */
         post: operations["startChat"];
         delete?: never;
@@ -281,7 +283,7 @@ export interface paths {
         };
         /**
          * 내 프로필 조회
-         * @description 닉네임·생년·학과·MBTI·관심사·가입 단계와, 수정 가능 항목(닉네임·MBTI·관심사)별 30일 변경 제한 상태(profileEdit: lastChangedAt·nextChangeableAt·changeable)를 반환한다. 온보딩 이후 변경한 적 없는 항목은 두 시각이 null이고 즉시 변경 가능하다. 온보딩 미완료 회원은 수정 대상이 아니므로 profileEdit이 null이다.
+         * @description 닉네임·생년·학과·MBTI·관심사·가입 단계와, 수정 가능 항목(닉네임·MBTI·관심사·사진 교체·블러 강도)별 30일 변경 제한 상태(profileEdit: lastChangedAt·nextChangeableAt·changeable)를 반환한다. 온보딩 이후 변경한 적 없는 항목은 두 시각이 null이고 즉시 변경 가능하다. 온보딩 미완료 회원은 수정 대상이 아니므로 profileEdit이 null이다.
          */
         get: operations["getMyProfile"];
         put?: never;
@@ -293,7 +295,7 @@ export interface paths {
          *     - 계정과 프로필이 비활성화되어 탐색·공개 피드·카드 상세·채팅 개설 대상에서 빠진다(회원 행·피드·사진·메시지·신고/차단 이력은 삭제하지 않음).
          *     - 참여 중인 대화는 종료된다(ACTIVE·BLOCKED 방은 CLOSED, 신고 검토 중인 REPORTED 방은 상태 유지). 탈퇴 회원은 모든 방에서 나가며, 상대는 지난 이력만 볼 수 있고 새 메시지를 보낼 수 없다.
          *     - 서버의 Refresh Token과 진행 중인 학교 이메일 인증 코드를 지운다. 기존 Access Token으로 보호 API를 호출하거나 STOMP에 연결하면 403 MEMBER_403_INACTIVE다(다시 탈퇴를 요청해도 같다).
-         *     - 탈퇴 후 30일 동안 같은 카카오 계정으로 로그인하거나 같은 학교 이메일을 인증하면 409 MEMBER_409_REJOIN_RESTRICTED이며, 메시지에 가입 가능 시각이 담긴다. 정확히 30일이 지난 시점부터 새 회원으로 다시 가입할 수 있다(학교 인증·온보딩부터 다시).
+         *     - 재가입 제한은 현재 해제되어 있다(#124). 탈퇴 직후에도 같은 카카오 계정으로 로그인하면 새 회원으로 가입되고(학교 인증·온보딩부터 다시), 같은 학교 이메일도 바로 다시 인증할 수 있다.
          *     - 신고 누적으로 정지된 회원은 탈퇴할 수 없다(403 MEMBER_403_INACTIVE).
          */
         delete: operations["withdraw"];
@@ -371,7 +373,9 @@ export interface paths {
         };
         /**
          * 탐색 목록 조회
-         * @description 온보딩 완료한 이성 회원을 가중 점수(키워드·MBTI·년생·학과)순으로 정렬해 page/size 페이지네이션한다. 동점은 최근 7일 접속 우선으로 가른다. 다음 페이지는 page를 1씩 올려 요청한다. 온보딩 미완료자는 403.
+         * @description 온보딩 완료한 이성 회원을 가중 점수(키워드·MBTI·년생·학과)순으로 정렬해 page/size 페이지네이션한다. 동점은 최근 7일 접속 우선으로 가른다. 다음 페이지는 page를 1씩 올려 요청한다.
+         *
+         *     온보딩 전 조회자(#122): 성별·관심사가 아직 없어 성별 구분 없이 공개 피드(활성·온보딩 완료·사진 5장 READY·차단 아님)를 점수 없이 최근 접속순(최근 7일 접속 우선 → 마지막 접속 → feedId 내림차순)으로 보여준다. 대화 시작은 온보딩 완료 후에만 가능하다.
          *
          *     기존 대화(#112): 이미 대화 중인 상대는 점수와 무관하게 목록 뒤쪽에 오고, 카드의 chatRoom(roomId, roomStatus)이 채워진다. 이 경우 첫 메시지 입력 없이 roomId로 기존 채팅방에 바로 들어간다. 종료(CLOSED)·검토 중(REPORTED) 관계인 상대는 다시 대화할 수 없으므로 목록에 나오지 않는다. 채팅방이 없으면 chatRoom은 null.
          */
@@ -393,7 +397,7 @@ export interface paths {
         };
         /**
          * 탐색 카드 상세 조회
-         * @description 선택한 카드의 기본 정보(닉네임·생년·학과·MBTI·성별)와 관심사 키워드를 반환한다. 키워드마다 조회자도 선택한 태그면 matched=true. 사진은 GET /api/feeds/{feedId}/images로 따로 조회한다. 탐색 목록과 같은 노출 조건(이성·활성·차단 아님·사진 5장 READY)을 재검증하며, 대상이 없거나 조건을 충족하지 않으면 사유 구분 없이 404. 종료(CLOSED)·검토 중(REPORTED) 관계인 상대도 404. 이미 대화 중이면 chatRoom(roomId, roomStatus)이 채워진다(#112). 조회자 온보딩 미완료 403.
+         * @description 선택한 카드의 기본 정보(닉네임·생년·학과·MBTI·성별)와 관심사 키워드를 반환한다. 키워드마다 조회자도 선택한 태그면 matched=true. 사진은 GET /api/feeds/{feedId}/images로 따로 조회한다. 탐색 목록과 같은 노출 조건(이성·활성·차단 아님·사진 5장 READY)을 재검증하며, 대상이 없거나 조건을 충족하지 않으면 사유 구분 없이 404. 종료(CLOSED)·검토 중(REPORTED) 관계인 상대도 404. 이미 대화 중이면 chatRoom(roomId, roomStatus)이 채워진다(#112). 온보딩 전 조회자는 이성 조건 없이 검증하고 matched는 모두 false다(#122).
          */
         get: operations["getCardDetail"];
         put?: never;
@@ -598,6 +602,7 @@ export interface components {
             mbti?: components["schemas"]["ProfileEditItemStatus"];
             keywords?: components["schemas"]["ProfileEditItemStatus"];
             photos?: components["schemas"]["ProfileEditItemStatus"];
+            blurLevel?: components["schemas"]["ProfileEditItemStatus"];
         };
         ReportRequest: {
             /** Format: int64 */
@@ -980,6 +985,29 @@ export interface components {
              * @example blur
              */
             nickName?: string;
+            /**
+             * Format: int32
+             * @description 출생 연도(온보딩 전이면 null)
+             * @example 2001
+             */
+            birthYear?: number;
+            /**
+             * @description 학과 코드(온보딩 전이면 null)
+             * @example COMPUTER_ENGINEERING
+             * @enum {string}
+             */
+            department?: "THEOLOGY" | "CHRISTIAN_EDUCATION" | "KOREAN_LANGUAGE" | "ENGLISH" | "RUSSIAN" | "CHINESE" | "EARLY_CHILDHOOD_EDUCATION" | "PERFORMING_ARTS" | "MUSIC" | "DIGITAL_MEDIA_DESIGN" | "COSMETIC_INVENTION_DESIGN" | "BEAUTY_MEDICAL_DESIGN" | "GAME_CONTENT" | "PRACTICAL_MUSIC" | "SPORTS_SCIENCE" | "SPORTS_APPLIED_INDUSTRY" | "GLOBAL_BUSINESS" | "PUBLIC_ADMINISTRATION" | "TOURISM_MANAGEMENT" | "PUBLIC_GOVERNANCE" | "TOURISM" | "FOOD_NUTRITION" | "COMPUTER_ENGINEERING" | "INFORMATION_ELECTRICAL_ELECTRONIC" | "STATISTICS_DATA_SCIENCE" | "SOFTWARE" | "URBAN_INFORMATION_ENGINEERING" | "ENVIRONMENTAL_ENERGY_ENGINEERING" | "AI_CONVERGENCE" | "SMART_CITY_ENGINEERING" | "MARINE_BIO_ENGINEERING" | "CONVERGENCE_SOFTWARE";
+            /**
+             * @description 학과 표시명(온보딩 전이면 null)
+             * @example 컴퓨터공학과
+             */
+            departmentLabel?: string;
+            /**
+             * @description MBTI(모름이거나 온보딩 전이면 null)
+             * @example INFP
+             * @enum {string}
+             */
+            mbti?: "ISTJ" | "ISFJ" | "INFJ" | "INTJ" | "ISTP" | "ISFP" | "INFP" | "INTP" | "ESTP" | "ESFP" | "ENFP" | "ENTP" | "ESTJ" | "ESFJ" | "ENFJ" | "ENTJ";
             /**
              * Format: date-time
              * @description 차단한 시각(한국 시간, +09:00)

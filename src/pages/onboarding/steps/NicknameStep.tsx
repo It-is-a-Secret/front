@@ -2,6 +2,7 @@ import {useState} from 'react';
 
 import {FieldErrorMessage} from '@/shared/components/FieldErrorMessage';
 import {Input} from '@/shared/components/Input';
+import {isValidNickname} from '@/shared/lib/nickname';
 
 const NICKNAME_MAX_LENGTH = 12;
 const MOCK_DUPLICATED_NICKNAMES = ['행복한코딩러'];
@@ -16,6 +17,8 @@ export const NicknameStep = ({
   onNicknameChange,
 }: NicknameStepProps) => {
   const hasNickname = nickname.length > 0;
+  const valid = isValidNickname(nickname);
+  const isInvalid = hasNickname && !valid;
   const [nicknameStatus, setNicknameStatus] = useState<
     'idle' | 'duplicated' | 'available'
   >('idle');
@@ -24,6 +27,7 @@ export const NicknameStep = ({
   const isAvailable = nicknameStatus === 'available';
 
   const handleCheckDuplicate = () => {
+    if (!valid) return;
     setNicknameStatus(
       MOCK_DUPLICATED_NICKNAMES.includes(nickname) ? 'duplicated' : 'available'
     );
@@ -57,12 +61,12 @@ export const NicknameStep = ({
           value={nickname}
           onChange={(event) => handleNicknameChange(event.target.value)}
           maxLength={NICKNAME_MAX_LENGTH}
-          isError={isDuplicated}
+          isError={isInvalid || isDuplicated}
           placeholder='ex) abcde'
           rightItem={
             <button
               type='button'
-              disabled={!hasNickname}
+              disabled={!valid}
               className='text-regular-10 bg-primary text-white-800 disabled:text-white-800 rounded-full px-[0.8rem] py-[0.6rem] disabled:bg-gray-200'
               onClick={handleCheckDuplicate}>
               중복확인
@@ -70,14 +74,21 @@ export const NicknameStep = ({
           }
         />
 
-        {isDuplicated && (
+        {isInvalid && (
+          <FieldErrorMessage
+            message='닉네임은 한글, 영문, 숫자로 2~12자 입력해 주세요.'
+            className='pl-[0.2rem]'
+          />
+        )}
+
+        {!isInvalid && isDuplicated && (
           <FieldErrorMessage
             message='이미 사용 중인 닉네임이에요'
             className='pl-[0.2rem]'
           />
         )}
 
-        {isAvailable && (
+        {valid && isAvailable && (
           <FieldErrorMessage
             message='사용 가능한 닉네임이에요'
             variant='default'

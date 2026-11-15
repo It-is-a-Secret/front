@@ -1,16 +1,13 @@
+import type {MemberProfile} from '@/pages/my/api/type';
+import {getMyProfileDescription} from '@/pages/my/model/my-profile';
+
 interface ProfileProps {
-  nickname: string;
-  birthYear: string;
-  gender: string;
-  department: string;
+  profile: MemberProfile;
 }
 
-export const Profile = ({
-  nickname,
-  birthYear,
-  gender,
-  department,
-}: ProfileProps) => {
+export const Profile = ({profile}: ProfileProps) => {
+  const description = getMyProfileDescription(profile);
+
   return (
     <div className='flex gap-[0.8rem]'>
       <div className='border-primary-400 bg-white-800 flex size-[6.4rem] items-center justify-center rounded-full border'>
@@ -21,8 +18,12 @@ export const Profile = ({
         />
       </div>
       <div className='flex flex-col justify-center'>
-        <span className='text-title-18b'>{nickname}</span>
-        <span className='text-body1-15r text-gray-600'>{`${birthYear}년생(${gender})·${department}`}</span>
+        <span className='text-title-18b'>
+          {profile.nickName?.trim() || '닉네임 미설정'}
+        </span>
+        {description && (
+          <span className='text-body1-15r text-gray-600'>{description}</span>
+        )}
       </div>
     </div>
   );

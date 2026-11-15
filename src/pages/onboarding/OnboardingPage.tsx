@@ -14,7 +14,7 @@ import {
   ONBOARDING_QUERY_OPTIONS,
 } from '@/pages/onboarding/api/query';
 import {useOnboardingDraft} from '@/pages/onboarding/hooks/useOnboardingDraft';
-import {buildCompleteOnboardingRequest} from '@/pages/onboarding/model/complete-onboarding';
+import {submitOnboarding} from '@/pages/onboarding/model/submit-onboarding';
 import {BirthYearStep} from '@/pages/onboarding/steps/BirthYearStep';
 import {BlurStrengthStep} from '@/pages/onboarding/steps/BlurStrengthStep';
 import {CompleteOnboardingStep} from '@/pages/onboarding/steps/CompleteOnboardingStep';
@@ -38,6 +38,7 @@ import {Button} from '@/shared/components/Button';
 import {Header} from '@/shared/components/Header';
 import {useToast} from '@/shared/hooks/useToast';
 import {IcSvgLeft} from '@/shared/icons';
+import {isValidNickname} from '@/shared/lib/nickname';
 
 export const OnboardingPage = () => {
   const navigate = useNavigate();
@@ -100,7 +101,7 @@ export const OnboardingPage = () => {
   }, [isReady, errorToastMessage, showToast]);
 
   const {
-    step,
+    step: draftStep,
     nickname,
     selectedGender,
     birthYear,
@@ -110,6 +111,9 @@ export const OnboardingPage = () => {
     blurStrength,
     photoSlots,
   } = draft;
+  const isProfileCompleted =
+    profileQuery.data?.data?.registrationStatus === 'COMPLETED';
+  const step = isProfileCompleted ? 'photoUpload' : draftStep;
 
   const currentStepIndex = ONBOARDING_STEPS.indexOf(step);
   const isInterestStep = INTEREST_STEPS.includes(step as InterestStep);
@@ -119,7 +123,7 @@ export const OnboardingPage = () => {
     ? (selectedInterests[interestStep]?.length ?? 0)
     : 0;
   const isNextDisabled =
-    (step === 'nickname' && nickname.length === 0) ||
+    (step === 'nickname' && !isValidNickname(nickname)) ||
     (step === 'gender' && !selectedGender) ||
     (step === 'department' && department.length === 0) ||
     (step === 'mbti' && !selectedMbti) ||
@@ -141,7 +145,7 @@ export const OnboardingPage = () => {
   };
 
   const handleBack = () => {
-    if (isSubmitting) return;
+    if (isSubmitting || isProfileCompleted) return;
 
     if (currentStepIndex === 0) {
       navigate(-1);
@@ -158,13 +162,22 @@ export const OnboardingPage = () => {
     setSubmitError(null);
 
     try {
-      const catalog = await queryClient.fetchQuery(
-        ONBOARDING_QUERY_OPTIONS.KEYWORDS()
-      );
-      const body = buildCompleteOnboardingRequest(draft, catalog);
-
-      await uploadImagesMutation.mutateAsync(draft);
-      await completeMutation.mutateAsync(body);
+      await submitOnboarding(draft, {
+        isOnboardingComplete: async () => {
+          const profile = await queryClient.fetchQuery({
+            ...MY_QUERY_OPTIONS.PROFILE(),
+            staleTime: 0,
+          });
+          return profile.data?.registrationStatus === 'COMPLETED';
+        },
+        getKeywordCatalog: () =>
+          queryClient.fetchQuery(ONBOARDING_QUERY_OPTIONS.KEYWORDS()),
+        completeOnboarding: async (body) => {
+          const profile = await completeMutation.mutateAsync(body);
+          queryClient.setQueryData(QUERY_KEYS.profile.me(), profile);
+        },
+        uploadImages: (images) => uploadImagesMutation.mutateAsync(images),
+      });
       try {
         await clearAfterComplete();
       } catch {
@@ -185,6 +198,7 @@ export const OnboardingPage = () => {
   };
 
   const handleNext = () => {
+    if (isNextDisabled || isSubmitting) return;
     if (step === 'photoUpload' || step === 'complete') {
       void handleComplete();
       return;
@@ -372,7 +386,9 @@ export const OnboardingPage = () => {
     <section className='flex min-h-dvh flex-col'>
       <Header
         leftItem={
-          <IcSvgLeft width={24} height={24} className='text-gray-400' />
+          !isProfileCompleted && (
+            <IcSvgLeft width={24} height={24} className='text-gray-400' />
+          )
         }
         onClickLeft={handleBack}
         rightItem={

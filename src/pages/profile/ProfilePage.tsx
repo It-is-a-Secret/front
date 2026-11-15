@@ -4,6 +4,7 @@ import {useState} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
 
 import {getChatEntryPath} from '@/pages/chat/model/chat-entry';
+import {MY_QUERY_OPTIONS} from '@/pages/my/api/query';
 import {Chip} from '@/pages/onboarding/components/Chip';
 import type {GetDiscoveryDetailResponse} from '@/pages/profile/api/type';
 import {PROFILE_QUERY_OPTIONS} from '@/pages/profile/api/query';
@@ -20,11 +21,19 @@ export const ProfilePage = () => {
   const isValidFeedId = Number.isSafeInteger(feedId) && feedId > 0;
   const detailQuery = useQuery(PROFILE_QUERY_OPTIONS.DETAIL(feedId));
   const imagesQuery = useQuery(PROFILE_QUERY_OPTIONS.IMAGES(feedId));
+  const myProfileQuery = useQuery({
+    ...MY_QUERY_OPTIONS.PROFILE(),
+    refetchOnMount: 'always',
+  });
+  const registrationStatus = myProfileQuery.data?.data?.registrationStatus;
+  const onboardingCompleted = registrationStatus === 'COMPLETED';
+  const isCheckingMyProfile = myProfileQuery.isFetching;
+  const cannotCheckOnboarding =
+    myProfileQuery.isPending || myProfileQuery.isError || !registrationStatus;
   const profile = detailQuery.data?.data;
   const detailStatus = isHTTPError(detailQuery.error)
     ? detailQuery.error.response.status
     : undefined;
-  const onboardingCompleted = detailStatus !== 403;
   const images = [...(imagesQuery.data?.data?.images ?? [])]
     .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
     .flatMap(({variantUrl}) => (variantUrl ? [variantUrl] : []));
@@ -44,6 +53,7 @@ export const ProfilePage = () => {
   };
 
   const handleStartChat = () => {
+    if (isCheckingMyProfile || cannotCheckOnboarding) return;
     if (!onboardingCompleted) {
       setIsOnboardingSheetOpen(true);
       return;
@@ -67,14 +77,20 @@ export const ProfilePage = () => {
           role='alert'
           className='mt-[4rem] flex flex-col gap-[2rem] text-center'>
           <p className='text-body1-15r text-gray-600'>
-            {detailStatus === 403
+            {detailStatus === 403 && registrationStatus && !onboardingCompleted
               ? '온보딩을 완료해야 프로필을 볼 수 있어요'
               : !isValidFeedId || detailStatus === 404
                 ? '프로필을 찾을 수 없어요'
                 : '프로필을 불러오지 못했어요'}
           </p>
-          {detailStatus === 403 ? (
-            <Button text='프로필 만들기 안내' onClick={handleStartChat} />
+          {detailStatus === 403 &&
+          registrationStatus &&
+          !onboardingCompleted ? (
+            <Button
+              text='프로필 만들기 안내'
+              disabled={isCheckingMyProfile || cannotCheckOnboarding}
+              onClick={handleStartChat}
+            />
           ) : isValidFeedId && detailStatus !== 404 ? (
             <Button
               text='다시 시도'
@@ -152,13 +168,30 @@ export const ProfilePage = () => {
 
           <div className='mt-[2.8rem]'>
             <Button
-              text='채팅 시작하기'
+              text={
+                isCheckingMyProfile ? '내 정보 확인 중...' : '채팅 시작하기'
+              }
               description='대화가 진전되면 사진이 한 장씩 공개돼요'
+              disabled={isCheckingMyProfile || cannotCheckOnboarding}
               onClick={handleStartChat}
             />
           </div>
         </>
       ) : null}
+
+      {!myProfileQuery.isPending &&
+        (myProfileQuery.isError || !registrationStatus) && (
+          <div role='alert' className='mt-[1.6rem] flex flex-col gap-[1.2rem]'>
+            <p className='text-body1-15r text-center text-gray-600'>
+              내 정보를 불러오지 못했어요. 다시 확인해 주세요.
+            </p>
+            <Button
+              text={isCheckingMyProfile ? '확인 중...' : '내 정보 다시 확인'}
+              disabled={isCheckingMyProfile}
+              onClick={() => void myProfileQuery.refetch()}
+            />
+          </div>
+        )}
 
       <BottomSheet
         open={isOnboardingSheetOpen}

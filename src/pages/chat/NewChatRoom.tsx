@@ -6,6 +6,7 @@ import {Navigate, useNavigate, useParams} from 'react-router-dom';
 import {ChatInputBox} from '@/pages/chat/components/ChatInputBox';
 import {ChatImageList} from '@/pages/chat/components/ChatImageList';
 import {ChatRoomState} from '@/pages/chat/components/ChatRoomState';
+import {updateChatRoomPreview} from '@/pages/chat/utils/chat-room-preview';
 import {
   getChatEntryPath,
   getStartChatDraft,
@@ -34,7 +35,22 @@ const NewChatRoomContent = ({feedId}: {feedId: number}) => {
   const submittingRef = useRef(false);
   const mutation = useMutation({
     ...HOME_MUTATION_OPTIONS.START_CHAT(),
-    onSuccess: (response, variables) => {
+    onSuccess: async (response, variables) => {
+      await queryClient.cancelQueries({queryKey: QUERY_KEYS.chat.rooms()});
+      if (response.data.created && response.data.firstMessage) {
+        updateChatRoomPreview(
+          queryClient,
+          response.data.roomId,
+          response.data.firstMessage,
+          {
+            roomId: response.data.roomId,
+            partnerNickname: detailQuery.data?.data?.nickName,
+            roomStatus: 'ACTIVE',
+            progressStatus: 'MATCHED',
+            unreadCount: 0,
+          }
+        );
+      }
       // 첫 메시지는 REST에서 이미 저장하므로 STOMP로 다시 보내지 않습니다.
       void queryClient.invalidateQueries({queryKey: QUERY_KEYS.chat.all});
       void queryClient.invalidateQueries({queryKey: QUERY_KEYS.discovery.all});
@@ -140,22 +156,12 @@ const NewChatRoomContent = ({feedId}: {feedId: number}) => {
           <div
             role='alert'
             className='text-body1-15r px-[2rem] py-[0.8rem] text-center text-gray-600'>
-            {errorStatus === 403
-              ? '온보딩을 완료해야 채팅을 시작할 수 있어요.'
-              : errorStatus === 404 || errorStatus === 409
-                ? '대화할 수 없는 상대예요. 홈에서 다시 확인해 주세요.'
-                : errorStatus === 400
-                  ? '보낼 메시지를 확인해 주세요.'
-                  : '전송 결과를 확인하지 못했어요. 연결을 확인하고 다시 시도해 주세요.'}
-            {errorStatus === 403 && (
-              <button
-                type='button'
-                className='text-primary block w-full py-[0.8rem]'
-                onClick={() => navigate('/onboarding')}>
-                프로필 만들기
-              </button>
-            )}
-            {(errorStatus === 404 || errorStatus === 409) && (
+            {cannotStart
+              ? '지금은 대화를 시작할 수 없어요. 홈에서 다시 확인해 주세요.'
+              : errorStatus === 400
+                ? '보낼 메시지를 확인해 주세요.'
+                : '전송 결과를 확인하지 못했어요. 연결을 확인하고 다시 시도해 주세요.'}
+            {cannotStart && (
               <button
                 type='button'
                 className='text-primary block w-full py-[0.8rem]'

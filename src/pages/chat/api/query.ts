@@ -4,6 +4,7 @@ import {
   queryOptions,
 } from '@tanstack/react-query';
 import {isHTTPError} from 'ky';
+import {preserveChatRoomPreviews} from '../utils/chat-room-preview';
 
 import {api, API_ENDPOINT, QUERY_KEYS} from '@/shared/api';
 import {
@@ -62,6 +63,7 @@ export const CHAT_QUERY_OPTIONS = {
     queryOptions({
       queryKey: QUERY_KEYS.chat.rooms(),
       queryFn: ({signal}) => getChatRooms(signal),
+      structuralSharing: preserveChatRoomPreviews,
       staleTime: 0,
       refetchOnMount: 'always',
     }),

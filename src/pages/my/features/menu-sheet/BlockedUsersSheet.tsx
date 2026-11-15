@@ -11,6 +11,7 @@ import type {
 } from '@/shared/api/moderation/type';
 import {QUERY_KEYS} from '@/shared/api';
 import {getProfileErrorMessage} from '@/pages/my/model/profile-edit';
+import {getBlockedMemberDescription} from '@/pages/my/model/blocked-members';
 
 import {BlockedUserItem} from '@/pages/my/components/BlockedUserItem';
 import {BottomSheet} from '@/shared/components/BottomSheet';
@@ -124,6 +125,7 @@ export const BlockedUsersSheet = ({onClose}: BlockedUsersSheetProps) => {
             <BlockedUserItem
               key={user.blockedMemberId ?? index}
               userName={user.nickName ?? '알 수 없는 사용자'}
+              description={getBlockedMemberDescription(user)}
               blockTime={formatBlockedAt(user.blockedAt)}
               disabled={
                 unblock.isPending ||

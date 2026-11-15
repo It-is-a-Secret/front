@@ -7,6 +7,7 @@ import {FieldErrorMessage} from '@/shared/components/FieldErrorMessage';
 interface CodeAuthStepProps {
   email: string;
   code: string;
+  attemptCount: number;
   errorMessage?: string;
   isPending?: boolean;
   onCodeChange: (code: string) => void;
@@ -17,6 +18,7 @@ interface CodeAuthStepProps {
 export const CodeAuthStep = ({
   email,
   code,
+  attemptCount,
   errorMessage,
   isPending = false,
   onCodeChange,
@@ -34,7 +36,7 @@ export const CodeAuthStep = ({
           value={code}
           onChange={onCodeChange}
           expireSeconds={AUTH_MOCK.expireSeconds}
-          attemptCount={AUTH_MOCK.attemptCount}
+          attemptCount={attemptCount}
           maxAttemptCount={AUTH_MOCK.maxAttemptCount}
           disabled={isPending}
           isError={Boolean(errorMessage)}
@@ -57,7 +59,7 @@ export const CodeAuthStep = ({
         </button>
         <Button
           text={isPending ? '확인 중...' : '확인'}
-          disabled={code.length !== 6 || isPending}
+          disabled={!/^\d{6}$/.test(code) || isPending}
           onClick={onConfirm}
         />
       </div>

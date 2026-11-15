@@ -7,6 +7,7 @@ import type {
 } from '../api/type';
 import {QUERY_KEYS} from '@/shared/api/config/query-key';
 import {getRevealedPhotoCount} from './get-revealed-photo-count';
+import {updateChatRoomPreview} from './chat-room-preview';
 
 export const preserveRoomProgress = (
   previous: unknown,
@@ -76,6 +77,7 @@ export const appendChatMessage = (
   roomId: number,
   message: ChatMessageResponse
 ) => {
+  updateChatRoomPreview(queryClient, roomId, message);
   const prefix = [...QUERY_KEYS.chat.room(roomId), 'messages'];
   const queries = queryClient.getQueriesData<ChatMessagePages>({
     queryKey: prefix,

@@ -1,16 +1,22 @@
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import {useMutation} from '@tanstack/react-query';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 
 import {AUTH_MUTATION_OPTIONS} from '@/pages/auth/api/query';
-import {AUTH_EMAIL_DOMAIN, AUTH_STEP_PROGRESS} from '@/pages/auth/mocks/mock';
+import {
+  AUTH_EMAIL_DOMAIN,
+  AUTH_MOCK,
+  AUTH_STEP_PROGRESS,
+} from '@/pages/auth/mocks/mock';
 import type {AuthStep} from '@/pages/auth/mocks/mock';
 import {CodeAuthStep} from '@/pages/auth/steps/CodeAuthStep';
 import {CompleteAuthStep} from '@/pages/auth/steps/CompleteAuthStep';
 import {EmailAuthStep} from '@/pages/auth/steps/EmailAuthStep';
 import {LoginAuthStep} from '@/pages/auth/steps/LoginAuthStep';
+import {ToastMessage} from '@/pages/my/components/ToastMessage';
 import {API_ENDPOINT} from '@/shared/api/end-point';
 import {Header} from '@/shared/components/Header';
+import {useToast} from '@/shared/hooks/useToast';
 import {IcSvgLeft} from '@/shared/icons';
 
 export const AuthPage = () => {
@@ -22,14 +28,24 @@ export const AuthPage = () => {
   const [step, setStep] = useState<AuthStep>(initialStep);
   const [emailId, setEmailId] = useState('');
   const [code, setCode] = useState('');
+  const [verificationAttempts, setVerificationAttempts] = useState(0);
+  const verifyingRef = useRef(false);
+  const [resendNotice, setResendNotice] = useState({
+    message: '',
+    isError: false,
+  });
+  const resendToast = useToast({visibleDuration: 1500, fadeDuration: 150});
 
   const email = `${emailId.trim()}${AUTH_EMAIL_DOMAIN}`;
   const sendEmailCodeMutation = useMutation(
     AUTH_MUTATION_OPTIONS.SEND_SCHOOL_EMAIL_CODE()
   );
-  const verifyEmailCodeMutation = useMutation(
-    AUTH_MUTATION_OPTIONS.VERIFY_SCHOOL_EMAIL()
-  );
+  const verifyEmailCodeMutation = useMutation({
+    ...AUTH_MUTATION_OPTIONS.VERIFY_SCHOOL_EMAIL(),
+    onSettled: () => {
+      verifyingRef.current = false;
+    },
+  });
 
   const handleKakaoLogin = () => {
     const kakaoAuthorizeUrl = new URL(
@@ -49,6 +65,7 @@ export const AuthPage = () => {
   };
 
   const handleBackToEmail = () => {
+    resendToast.hideToast();
     setCode('');
     sendEmailCodeMutation.reset();
     verifyEmailCodeMutation.reset();
@@ -68,14 +85,67 @@ export const AuthPage = () => {
   };
 
   const handleMoveComplete = () => {
+    resendToast.hideToast();
+    setVerificationAttempts(0);
     setStep('complete');
     navigate('/auth?step=complete', {replace: true});
   };
 
   const handleVerifyEmailCode = () => {
+    if (
+      verifyingRef.current ||
+      sendEmailCodeMutation.isPending ||
+      !/^\d{6}$/.test(code)
+    )
+      return;
+    verifyingRef.current = true;
     verifyEmailCodeMutation.mutate(
       {schoolEmail: email, code},
-      {onSuccess: handleMoveComplete}
+      {
+        onSuccess: handleMoveComplete,
+        onError: () => {
+          const attempts = verificationAttempts + 1;
+          setVerificationAttempts(attempts);
+          if (attempts >= AUTH_MOCK.maxAttemptCount) {
+            resendToast.hideToast();
+            setEmailId('');
+            setCode('');
+            setVerificationAttempts(0);
+            sendEmailCodeMutation.reset();
+            verifyEmailCodeMutation.reset();
+            setStep('login');
+            navigate('/auth', {replace: true});
+          }
+        },
+      }
+    );
+  };
+
+  const handleResendEmailCode = () => {
+    if (sendEmailCodeMutation.isPending || verifyEmailCodeMutation.isPending)
+      return;
+    verifyEmailCodeMutation.reset();
+    setResendNotice({
+      message: '인증번호 재발송을 요청했어요.',
+      isError: false,
+    });
+    resendToast.showToast();
+    sendEmailCodeMutation.mutate(
+      {schoolEmail: email},
+      {
+        onSuccess: () => {
+          setCode('');
+        },
+        onError: (error) => {
+          setResendNotice({
+            message:
+              error.message ||
+              '인증번호 재발송에 실패했어요. 다시 시도해 주세요.',
+            isError: true,
+          });
+          resendToast.showToast();
+        },
+      }
     );
   };
 
@@ -96,6 +166,7 @@ export const AuthPage = () => {
         <CodeAuthStep
           email={email}
           code={code}
+          attemptCount={verificationAttempts}
           errorMessage={
             verifyEmailCodeMutation.error?.message ??
             sendEmailCodeMutation.error?.message
@@ -108,10 +179,7 @@ export const AuthPage = () => {
             setCode(nextCode);
           }}
           onConfirm={handleVerifyEmailCode}
-          onResend={() => {
-            verifyEmailCodeMutation.reset();
-            handleSendEmailCode();
-          }}
+          onResend={handleResendEmailCode}
         />
       );
     }
@@ -150,14 +218,20 @@ export const AuthPage = () => {
           <IcSvgLeft width={24} height={24} className='text-gray-400' />
         }
         onClickLeft={handleBack}
-        rightItem={
-          <span className='text-caption1-12r text-gray-400'>건너뛰기</span>
-        }
-        onClickRight={handleMoveComplete}
         hasProgress
         progress={AUTH_STEP_PROGRESS[step]}
       />
       {renderStepContent()}
+      {step === 'code' && resendToast.isVisible && (
+        <div
+          className={`pointer-events-none fixed right-[2rem] bottom-[16rem] left-[2rem] z-[80] mx-auto max-w-[39rem] transition-opacity ${resendToast.isLeaving ? 'opacity-0' : 'opacity-100'}`}
+          style={{transitionDuration: `${resendToast.fadeDuration}ms`}}>
+          <ToastMessage
+            message={resendNotice.message}
+            isError={resendNotice.isError}
+          />
+        </div>
+      )}
     </section>
   );
 };

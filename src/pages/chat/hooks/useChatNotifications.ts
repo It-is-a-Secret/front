@@ -8,6 +8,7 @@ import {
   type ChatServerError,
 } from '@/pages/chat/api/stomp/event';
 import {refreshChatRooms} from '@/pages/chat/utils/refresh-chat-rooms';
+import {updateChatRoomPreview} from '@/pages/chat/utils/chat-room-preview';
 import {QUERY_KEYS} from '@/shared/api';
 import {useStomp} from '@/shared/api/stomp/useStomp';
 
@@ -36,7 +37,13 @@ export const useChatNotifications = (
       CHAT_DESTINATION.NOTIFICATIONS,
       (body) => {
         try {
-          if (!parseNotification(body)) return;
+          const notification = parseNotification(body);
+          if (!notification) return;
+          updateChatRoomPreview(
+            queryClient,
+            notification.roomId,
+            notification.message
+          );
           // 알림은 unreadCount를 포함하지 않으므로 서버의 목록으로 다시 맞춥니다.
           void refreshChatRooms(queryClient);
         } catch {
