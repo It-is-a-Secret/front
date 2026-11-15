@@ -2,6 +2,7 @@ import {useInfiniteQuery} from '@tanstack/react-query';
 
 import {HOME_QUERY_OPTIONS} from '@/pages/home/api/query';
 import {Swipe} from '@/pages/home/components/Swipe';
+import {PwaInstallPrompt} from '@/pages/home/features/pwa-install-prompt/PwaInstallPrompt';
 import {EmptyState} from '@/shared/components/EmptyState';
 import {Header} from '@/shared/components/Header';
 
@@ -83,6 +84,7 @@ export const HomePage = () => {
           />
         </div>
       )}
+      <PwaInstallPrompt />
     </main>
   );
 };
