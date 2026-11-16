@@ -1,3 +1,4 @@
+import {TermsDocument} from '@/pages/terms/TermsDocument';
 import {Header} from '@/shared/components/Header';
 import {IcSvgLeft} from '@/shared/icons';
 
@@ -15,6 +16,7 @@ export const PoliciesSheet = ({onClose}: PoliciesSheetProps) => {
         }
         onClickLeft={onClose}
       />
+      <TermsDocument />
     </section>
   );
 };

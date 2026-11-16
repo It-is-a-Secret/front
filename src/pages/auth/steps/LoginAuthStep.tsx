@@ -1,3 +1,5 @@
+import {Link} from 'react-router-dom';
+
 import {Button} from '@/shared/components/Button';
 
 interface LoginAuthStepProps {
@@ -20,7 +22,15 @@ export const LoginAuthStep = ({onKakaoLogin}: LoginAuthStepProps) => {
       <div className='pb-[calc(3.8rem+env(safe-area-inset-bottom))]'>
         <Button
           text='카카오 로그인 하기'
-          description='계속 진행 시 이용약관·개인정보 처리방침에 동의합니다'
+          description={
+            <>
+              계속 진행 시{' '}
+              <Link to='/terms' state={{fromLogin: true}} className='underline'>
+                이용약관
+              </Link>
+              ·개인정보 처리방침에 동의합니다
+            </>
+          }
           onClick={onKakaoLogin}
         />
       </div>
