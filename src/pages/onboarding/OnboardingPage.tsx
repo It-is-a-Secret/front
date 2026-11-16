@@ -349,7 +349,12 @@ export const OnboardingPage = () => {
     return (
       <>
         <CompleteOnboardingStep
-          onStart={() => navigate('/home', {replace: true})}
+          onStart={() =>
+            navigate('/home', {
+              replace: true,
+              state: {showPhotoBlurNotice: true},
+            })
+          }
         />
         {errorToast}
       </>
