@@ -7,6 +7,7 @@ import {MyMenuItem} from '@/pages/my/components/MyMenuItem';
 import {OnboardingUnfinishedCard} from '@/pages/my/components/OnboardingUnfinishedCard';
 import {Profile} from '@/pages/my/components/Profile';
 import {MY_QUERY_OPTIONS} from '@/pages/my/api/query';
+import {useChatPushSettings} from '@/pages/my/hooks/useChatPushSettings';
 import {useLogout} from '@/pages/my/hooks/useLogout';
 import {
   MyMenuSheet,
@@ -46,7 +47,7 @@ export const MyPage = () => {
   );
   const nextStep = savedStep ?? 'nickname';
   const completedCount = ONBOARDING_STEPS.indexOf(nextStep);
-  const [isChatNotificationOn, setIsChatNotificationOn] = useState(true);
+  const chatPush = useChatPushSettings();
   const [selectedMenuSheet, setSelectedMenuSheet] =
     useState<MyMenuSheetType | null>(null);
 
@@ -103,9 +104,30 @@ export const MyPage = () => {
             type='toggle'
             Icon={IcSvgBell}
             label='채팅 알림 설정'
-            checked={isChatNotificationOn}
-            onCheckedChange={setIsChatNotificationOn}
+            checked={chatPush.checked}
+            disabled={chatPush.disabled}
+            onCheckedChange={chatPush.setEnabled}
           />
+          {chatPush.availabilityMessage && (
+            <p className='text-caption2-12sb px-[1.2rem] text-gray-600'>
+              {chatPush.availabilityMessage}
+            </p>
+          )}
+          {chatPush.errorMessage && (
+            <p
+              role='alert'
+              className='text-caption2-12sb text-primary px-[1.2rem]'>
+              {chatPush.errorMessage}
+            </p>
+          )}
+          {chatPush.retrySetup && (
+            <button
+              type='button'
+              className='text-caption2-12sb text-primary self-start px-[1.2rem] underline'
+              onClick={chatPush.retrySetup}>
+              알림 설정 다시 불러오기
+            </button>
+          )}
           <MyMenuItem
             type='click'
             Icon={IcSvgBlock}

@@ -4,6 +4,30 @@
  */
 
 export interface paths {
+    "/api/push/subscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 이 기기 구독 등록·갱신
+         * @description 브라우저 PushSubscription.toJSON() 결과 { endpoint, keys: { p256dh, auth } }를 그대로 보낸다. endpoint 기준 upsert라 앱 시작 시마다, 그리고 pushsubscriptionchange 때 다시 보내도 멱등이다. 같은 endpoint를 다른 계정이 등록하면 소유 회원이 그 계정으로 바뀐다.
+         */
+        put: operations["subscribe"];
+        post?: never;
+        /**
+         * 이 기기 구독 해제
+         * @description 알림 끄기용. 프론트는 subscription.unsubscribe()와 함께 호출한다. 구독이 없거나 이미 해제됐어도 204(멱등).
+         */
+        delete: operations["unsubscribe"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/members/me/profile": {
         parameters: {
             query?: never;
@@ -247,7 +271,31 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /**
+         * 로그아웃
+         * @description RT 쿠키를 무효화하고 만료시킨다. 선택 body { "endpoint": "..." }를 보내면 이 기기의 푸시 구독도 함께 해제한다. body가 없거나 RT가 없어도 204(멱등).
+         */
         post: operations["logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/push/public-key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * VAPID 공개 키 조회
+         * @description 프론트 pushManager.subscribe({ applicationServerKey })에 넣을 공개 키(base64url)를 반환한다. 인증 없이 호출할 수 있다.
+         */
+        get: operations["getPublicKey"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -353,7 +401,7 @@ export interface paths {
         };
         /**
          * 공개 피드 이미지 조회
-         * @description 다른 회원이 보는 공개 피드 이미지를 displayOrder 순서로 조회한다. 깨진/처리중 블러본 노출을 막기 위해 모든 이미지가 READY일 때만 노출하며(전부-또는-비노출), 하나라도 PROCESSING/FAILED이거나 이미지가 없으면 404로 비노출한다.
+         * @description 다른 회원이 보는 공개 피드 이미지를 displayOrder 순서로 조회한다. 깨진/처리중 블러본 노출을 막기 위해 모든 이미지가 READY일 때만 노출하며(전부-또는-비노출), 하나라도 PROCESSING/FAILED이거나 이미지가 없으면 404로 비노출한다. 조회자는 학교 이메일 인증을 마쳐야 하며(온보딩은 불필요) 미인증이면 403(MEMBER_403_SCHOOL_VERIFICATION_REQUIRED). 피드 주인이 탈퇴·정지·온보딩 미완료이거나 조회자와 차단 관계(양방향)면 사유 구분 없이 404(#129).
          */
         get: operations["getPublicFeedImages"];
         put?: never;
@@ -377,6 +425,8 @@ export interface paths {
          *
          *     온보딩 전 조회자(#122): 성별·관심사가 아직 없어 성별 구분 없이 공개 피드(활성·온보딩 완료·사진 5장 READY·차단 아님)를 점수 없이 최근 접속순(최근 7일 접속 우선 → 마지막 접속 → feedId 내림차순)으로 보여준다. 대화 시작은 온보딩 완료 후에만 가능하다.
          *
+         *     학교 인증 게이트(#129): 조회자는 학교 이메일 인증을 마쳐야 한다(온보딩은 불필요). 카카오 로그인만 한 회원은 403(MEMBER_403_SCHOOL_VERIFICATION_REQUIRED).
+         *
          *     기존 대화(#112): 이미 대화 중인 상대는 점수와 무관하게 목록 뒤쪽에 오고, 카드의 chatRoom(roomId, roomStatus)이 채워진다. 이 경우 첫 메시지 입력 없이 roomId로 기존 채팅방에 바로 들어간다. 종료(CLOSED)·검토 중(REPORTED) 관계인 상대는 다시 대화할 수 없으므로 목록에 나오지 않는다. 채팅방이 없으면 chatRoom은 null.
          */
         get: operations["getDiscovery"];
@@ -397,7 +447,7 @@ export interface paths {
         };
         /**
          * 탐색 카드 상세 조회
-         * @description 선택한 카드의 기본 정보(닉네임·생년·학과·MBTI·성별)와 관심사 키워드를 반환한다. 키워드마다 조회자도 선택한 태그면 matched=true. 사진은 GET /api/feeds/{feedId}/images로 따로 조회한다. 탐색 목록과 같은 노출 조건(이성·활성·차단 아님·사진 5장 READY)을 재검증하며, 대상이 없거나 조건을 충족하지 않으면 사유 구분 없이 404. 종료(CLOSED)·검토 중(REPORTED) 관계인 상대도 404. 이미 대화 중이면 chatRoom(roomId, roomStatus)이 채워진다(#112). 온보딩 전 조회자는 이성 조건 없이 검증하고 matched는 모두 false다(#122).
+         * @description 선택한 카드의 기본 정보(닉네임·생년·학과·MBTI·성별)와 관심사 키워드를 반환한다. 키워드마다 조회자도 선택한 태그면 matched=true. 사진은 GET /api/feeds/{feedId}/images로 따로 조회한다. 탐색 목록과 같은 노출 조건(이성·활성·차단 아님·사진 5장 READY)을 재검증하며, 대상이 없거나 조건을 충족하지 않으면 사유 구분 없이 404. 종료(CLOSED)·검토 중(REPORTED) 관계인 상대도 404. 이미 대화 중이면 chatRoom(roomId, roomStatus)이 채워진다(#112). 온보딩 전 조회자는 이성 조건 없이 검증하고 matched는 모두 false다(#122). 학교 이메일 인증 전 조회자는 403(MEMBER_403_SCHOOL_VERIFICATION_REQUIRED, #129).
          */
         get: operations["getCardDetail"];
         put?: never;
@@ -552,6 +602,20 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        Keys: {
+            /** @description 수신 기기 공개 키(base64url) */
+            p256dh?: string;
+            /** @description 인증 비밀(base64url) */
+            auth?: string;
+        };
+        PushSubscriptionRequest: {
+            /**
+             * @description 푸시 서비스 endpoint
+             * @example https://web.push.apple.com/QGuQyavXut...
+             */
+            endpoint?: string;
+            keys: components["schemas"]["Keys"];
+        };
         ProfileUpdateRequest: {
             nickName?: string;
             /** @enum {string} */
@@ -771,6 +835,22 @@ export interface components {
             /** Format: date-time */
             timestamp?: string;
             data?: components["schemas"]["AuthTokenResponse"];
+        };
+        LogoutRequest: {
+            /** @description 이 기기의 Web Push 구독 endpoint(선택) */
+            endpoint?: string;
+        };
+        DataResponsePushPublicKeyResponse: {
+            /** Format: date-time */
+            timestamp?: string;
+            data?: components["schemas"]["PushPublicKeyResponse"];
+        };
+        PushPublicKeyResponse: {
+            /**
+             * @description VAPID 공개 키(base64url)
+             * @example BEl62iUYgUivxIkv69yViEuiBIa...
+             */
+            publicKey?: string;
         };
         DataResponseString: {
             /** Format: date-time */
@@ -1020,6 +1100,10 @@ export interface components {
             timestamp?: string;
             data?: components["schemas"]["BlockedMemberResponse"][];
         };
+        PushUnsubscribeRequest: {
+            /** @description 해제할 구독의 endpoint */
+            endpoint?: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -1029,6 +1113,66 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    subscribe: {
+        parameters: {
+            query?: never;
+            header?: {
+                "User-Agent"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushSubscriptionRequest"];
+            };
+        };
+        responses: {
+            /** @description 등록·갱신 완료(바디 없음) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 필수 값 누락·키 형식 오류(PUSH_400_INVALID_KEYS)·지원하지 않는 푸시 서비스 주소(PUSH_400_ENDPOINT_NOT_ALLOWED) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    unsubscribe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushUnsubscribeRequest"];
+            };
+        };
+        responses: {
+            /** @description 해제 완료(바디 없음, 구독이 없어도 204) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description endpoint 누락 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     updateProfile: {
         parameters: {
             query?: never;
@@ -1330,14 +1474,47 @@ export interface operations {
                 refreshToken?: string;
             };
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["LogoutRequest"];
+            };
+        };
         responses: {
-            /** @description No Content */
+            /** @description 로그아웃 완료(바디 없음) */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    getPublicKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description { "data": { "publicKey": "<base64url>" } } */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DataResponsePushPublicKeyResponse"];
+                };
+            };
+            /** @description 서버에 VAPID 키가 설정되지 않음(PUSH_503_NOT_CONFIGURED) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DataResponsePushPublicKeyResponse"];
+                };
             };
         };
     };

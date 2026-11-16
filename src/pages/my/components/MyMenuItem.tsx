@@ -17,6 +17,7 @@ type MyMenuItemProps =
       Icon: IconComponent;
       label: string;
       checked: boolean;
+      disabled?: boolean;
       onCheckedChange: (checked: boolean) => void;
     };
 
@@ -32,8 +33,9 @@ export const MyMenuItem = (props: MyMenuItemProps) => {
         <Switch.Root
           aria-label={props.label}
           checked={props.checked}
+          disabled={props.disabled}
           onCheckedChange={props.onCheckedChange}
-          className='relative h-[2.8rem] w-[5.2rem] rounded-full border border-gray-200 bg-gray-100 transition-colors data-[state=checked]:border-primary-600 data-[state=checked]:bg-primary-400'>
+          className='relative h-[2.8rem] w-[5.2rem] rounded-full border border-gray-200 bg-gray-100 transition-colors disabled:opacity-50 data-[state=checked]:border-primary-600 data-[state=checked]:bg-primary-400'>
           <Switch.Thumb className='block size-[2.4rem] translate-x-[0.3rem] rounded-full bg-gray-400 transition-[transform,background-color] data-[state=checked]:translate-x-[2.3rem] data-[state=checked]:bg-primary' />
         </Switch.Root>
       ) : (

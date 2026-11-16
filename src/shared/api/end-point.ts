@@ -32,6 +32,10 @@ export const API_ENDPOINT = {
       `/api/chat/rooms/${roomId}/revealed-images`,
     leaveRoom: (roomId: number) => `/api/chat/rooms/${roomId}/leave`,
   },
+  push: {
+    publicKey: '/api/push/public-key',
+    subscriptions: '/api/push/subscriptions',
+  },
   moderation: {
     reports: '/api/reports',
     blocks: '/api/blocks',

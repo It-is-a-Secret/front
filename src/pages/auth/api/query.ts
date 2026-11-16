@@ -2,6 +2,12 @@ import {mutationOptions} from '@tanstack/react-query';
 import {isHTTPError} from 'ky';
 
 import {api, API_ENDPOINT, publicApi} from '@/shared/api';
+import {
+  getCurrentChatPushSubscription,
+  runChatPushOperation,
+  setChatPushDisabledOnDevice,
+} from '@/shared/pwa/chat-push';
+import type {components} from '@/shared/types/schema';
 
 import type {
   AuthTokenResponse,
@@ -55,7 +61,18 @@ const kakaoCallback = (params: KakaoCallbackQuery) =>
     .get(API_ENDPOINT.auth.kakaoCallback, {searchParams: params})
     .json<AuthTokenResponse>();
 
-const logout = () => api.post(API_ENDPOINT.auth.logout);
+const logout = () =>
+  runChatPushOperation(async () => {
+    const subscription = await getCurrentChatPushSubscription().catch(
+      () => null
+    );
+    const body: components['schemas']['LogoutRequest'] | undefined =
+      subscription ? {endpoint: subscription.endpoint} : undefined;
+    const response = await api.post(API_ENDPOINT.auth.logout, {json: body});
+    setChatPushDisabledOnDevice(true);
+    await subscription?.unsubscribe().catch(() => undefined);
+    return response;
+  });
 
 export const AUTH_MUTATION_OPTIONS = {
   SEND_SCHOOL_EMAIL_CODE: () =>
