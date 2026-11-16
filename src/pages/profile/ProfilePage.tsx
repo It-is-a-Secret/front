@@ -3,8 +3,13 @@ import {isHTTPError} from 'ky';
 import {useState} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
 
-import {getChatEntryPath} from '@/pages/chat/model/chat-entry';
+import {
+  areChatPhotosReady,
+  getChatEntryPath,
+} from '@/pages/chat/model/chat-entry';
 import {MY_QUERY_OPTIONS} from '@/pages/my/api/query';
+import {ToastMessage} from '@/pages/my/components/ToastMessage';
+import {ONBOARDING_QUERY_OPTIONS} from '@/pages/onboarding/api/query';
 import {Chip} from '@/pages/onboarding/components/Chip';
 import type {GetDiscoveryDetailResponse} from '@/pages/profile/api/type';
 import {PROFILE_QUERY_OPTIONS} from '@/pages/profile/api/query';
@@ -12,6 +17,7 @@ import {ProfileImageCarousel} from '@/pages/profile/components/ProfileImageCarou
 import {BottomSheet} from '@/shared/components/BottomSheet';
 import {Button} from '@/shared/components/Button';
 import {Header} from '@/shared/components/Header';
+import {useToast} from '@/shared/hooks/useToast';
 import {IcSvgEtc, IcSvgLeft} from '@/shared/icons';
 
 export const ProfilePage = () => {
@@ -27,6 +33,29 @@ export const ProfilePage = () => {
   });
   const registrationStatus = myProfileQuery.data?.data?.registrationStatus;
   const onboardingCompleted = registrationStatus === 'COMPLETED';
+  const myImagesQuery = useQuery({
+    ...ONBOARDING_QUERY_OPTIONS.IMAGES(),
+    enabled: onboardingCompleted,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchInterval: (query) =>
+      !query.state.error &&
+      query.state.data?.data?.images?.some(
+        (image) => image.processingStatus === 'PROCESSING'
+      )
+        ? 2000
+        : false,
+  });
+  const isCheckingMyImages =
+    onboardingCompleted &&
+    (myImagesQuery.isPending ||
+      (myImagesQuery.isFetching && !myImagesQuery.isFetchedAfterMount));
+  const toast = useToast({visibleDuration: 3000, fadeDuration: 300});
+  const [toastMessage, setToastMessage] = useState('');
+  const notify = (message: string) => {
+    setToastMessage(message);
+    toast.showToast();
+  };
   const isCheckingMyProfile = myProfileQuery.isFetching;
   const cannotCheckOnboarding =
     myProfileQuery.isPending || myProfileQuery.isError || !registrationStatus;
@@ -53,13 +82,35 @@ export const ProfilePage = () => {
   };
 
   const handleStartChat = () => {
-    if (isCheckingMyProfile || cannotCheckOnboarding) return;
+    if (isCheckingMyProfile || cannotCheckOnboarding || isCheckingMyImages)
+      return;
     if (!onboardingCompleted) {
       setIsOnboardingSheetOpen(true);
       return;
     }
 
     if (!isValidFeedId || !profile) return;
+    if (myImagesQuery.isError || !myImagesQuery.data?.data) {
+      notify('사진 상태를 확인하지 못했어요. 다시 시도해 주세요.');
+      void myImagesQuery.refetch();
+      return;
+    }
+    const myImages = myImagesQuery.data.data.images;
+    if (
+      myImagesQuery.data.data.reuploadRequired ||
+      myImages?.some((image) => image.processingStatus === 'FAILED')
+    ) {
+      notify('사진 처리에 실패했어요. 프로필에서 사진을 다시 등록해 주세요.');
+      return;
+    }
+    if (!myImages?.length) {
+      notify('채팅을 시작하려면 프로필 사진을 등록해 주세요.');
+      return;
+    }
+    if (!areChatPhotosReady(myImages)) {
+      notify('사진 블러 처리 중이에요. 조금만 기다려 주세요.');
+      return;
+    }
     navigate(getChatEntryPath(feedId, profile.chatRoom));
   };
 
@@ -169,10 +220,18 @@ export const ProfilePage = () => {
           <div className='mt-[2.8rem]'>
             <Button
               text={
-                isCheckingMyProfile ? '내 정보 확인 중...' : '채팅 시작하기'
+                isCheckingMyProfile
+                  ? '내 정보 확인 중...'
+                  : isCheckingMyImages
+                    ? '사진 상태 확인 중...'
+                    : '채팅 시작하기'
               }
               description='대화가 진전되면 사진이 한 장씩 공개돼요'
-              disabled={isCheckingMyProfile || cannotCheckOnboarding}
+              disabled={
+                isCheckingMyProfile ||
+                cannotCheckOnboarding ||
+                isCheckingMyImages
+              }
               onClick={handleStartChat}
             />
           </div>
@@ -226,6 +285,13 @@ export const ProfilePage = () => {
           </div>
         </div>
       </BottomSheet>
+      {toast.isVisible && (
+        <div
+          className={`pointer-events-none fixed right-[2rem] bottom-[3.6rem] left-[2rem] z-[80] mx-auto max-w-[39rem] transition-opacity ${toast.isLeaving ? 'opacity-0' : 'opacity-100'}`}
+          style={{transitionDuration: `${toast.fadeDuration}ms`}}>
+          <ToastMessage message={toastMessage} />
+        </div>
+      )}
     </section>
   );
 };

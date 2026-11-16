@@ -6,19 +6,23 @@ interface PwaInstallBottomSheetProps {
   open: boolean;
   platform: PwaPlatform;
   onClose: () => void;
+  onOpenAutoFocus?: (event: Event) => void;
 }
 
 export const PwaInstallBottomSheet = ({
   open,
   platform,
   onClose,
+  onOpenAutoFocus,
 }: PwaInstallBottomSheetProps) => {
   if (platform === 'unknown') return null;
 
   return (
     <BottomSheet
       open={open}
+      autoFocus
       onClose={onClose}
+      onOpenAutoFocus={onOpenAutoFocus}
       ariaLabelledBy='pwa-install-title'>
       <div className='flex flex-col items-center px-[2rem] pt-[0.4rem] pb-[calc(1.6rem+env(safe-area-inset-bottom))]'>
         <img

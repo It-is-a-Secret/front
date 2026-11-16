@@ -5,6 +5,11 @@ import {useNavigate, useSearchParams} from 'react-router-dom';
 import {publicApi} from '@/shared/api/config/instance';
 import {setAccessToken} from '@/shared/api/config/auth-token';
 import {QUERY_KEYS} from '@/shared/api/config/query-key';
+import {
+  getChatLoginPath,
+  getChatReturnPath,
+  KAKAO_CHAT_RETURN_PATH_KEY,
+} from '@/shared/auth/model/chat-return-path';
 import {authSessionQueryOptions} from '@/shared/auth/session-query';
 import {Button} from '@/shared/components/Button';
 import {API_ENDPOINT} from '@/shared/api/end-point';
@@ -74,9 +79,13 @@ export const AuthCallbackPage = () => {
         );
         queryClient.setQueryData(QUERY_KEYS.profile.me(), profile);
         const registrationStatus = profile.data?.registrationStatus;
+        const returnPath = getChatReturnPath(
+          sessionStorage.getItem(KAKAO_CHAT_RETURN_PATH_KEY)
+        );
+        sessionStorage.removeItem(KAKAO_CHAT_RETURN_PATH_KEY);
 
         if (registrationStatus === 'COMPLETED') {
-          navigate('/', {replace: true});
+          navigate(returnPath ?? '/', {replace: true});
           return;
         }
 
@@ -108,7 +117,14 @@ export const AuthCallbackPage = () => {
         <div className='w-full max-w-[28rem] [&>div]:h-[5.2rem]'>
           <Button
             text='로그인 화면으로 돌아가기'
-            onClick={() => navigate('/auth', {replace: true})}
+            onClick={() =>
+              navigate(
+                getChatLoginPath(
+                  sessionStorage.getItem(KAKAO_CHAT_RETURN_PATH_KEY)
+                ),
+                {replace: true}
+              )
+            }
           />
         </div>
       </section>

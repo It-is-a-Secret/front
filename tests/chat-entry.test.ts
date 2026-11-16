@@ -2,10 +2,32 @@ import assert from 'node:assert/strict';
 import {test} from 'node:test';
 
 import {
+  areChatPhotosReady,
   getChatEntryPath,
   getStartChatDraft,
   readChatDraft,
 } from '../src/pages/chat/model/chat-entry';
+
+test('chat photo readiness requires every photo to be READY', () => {
+  assert.equal(
+    areChatPhotosReady([
+      {processingStatus: 'READY'},
+      {processingStatus: 'READY'},
+    ]),
+    true
+  );
+  for (const processingStatus of ['PROCESSING', 'FAILED', undefined] as const) {
+    assert.equal(
+      areChatPhotosReady([{processingStatus: 'READY'}, {processingStatus}]),
+      false
+    );
+  }
+});
+
+test('missing photos are not considered ready to start chatting', () => {
+  assert.equal(areChatPhotosReady(undefined), false);
+  assert.equal(areChatPhotosReady([]), false);
+});
 
 test('uses the server room ID rather than the feed ID for an existing conversation', () => {
   assert.equal(

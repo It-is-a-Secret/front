@@ -1,6 +1,6 @@
 import {useRef, useState} from 'react';
-import {useMutation} from '@tanstack/react-query';
-import {useNavigate, useSearchParams} from 'react-router-dom';
+import {useMutation, useQuery} from '@tanstack/react-query';
+import {Navigate, useNavigate, useSearchParams} from 'react-router-dom';
 
 import {AUTH_MUTATION_OPTIONS} from '@/pages/auth/api/query';
 import {
@@ -15,16 +15,59 @@ import {EmailAuthStep} from '@/pages/auth/steps/EmailAuthStep';
 import {LoginAuthStep} from '@/pages/auth/steps/LoginAuthStep';
 import {ToastMessage} from '@/pages/my/components/ToastMessage';
 import {API_ENDPOINT} from '@/shared/api/end-point';
+import {
+  getChatReturnPath,
+  KAKAO_CHAT_RETURN_PATH_KEY,
+} from '@/shared/auth/model/chat-return-path';
+import {authSessionQueryOptions} from '@/shared/auth/session-query';
 import {Header} from '@/shared/components/Header';
 import {useToast} from '@/shared/hooks/useToast';
 import {IcSvgLeft} from '@/shared/icons';
 
 export const AuthPage = () => {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const stepParam = searchParams.get('step');
+  const returnPath = getChatReturnPath(searchParams.get('returnTo'));
   const initialStep: AuthStep =
     stepParam === 'email' || stepParam === 'complete' ? stepParam : 'login';
+  const session = useQuery({
+    ...authSessionQueryOptions(),
+    enabled: initialStep === 'login',
+    retryOnMount: false,
+  });
+
+  if (initialStep === 'login') {
+    if (session.isPending) {
+      return (
+        <section
+          role='status'
+          className='flex min-h-dvh items-center justify-center'>
+          로그인 정보를 확인하고 있어요.
+        </section>
+      );
+    }
+
+    const registrationStatus = session.data?.profile.data?.registrationStatus;
+    if (
+      session.isSuccess &&
+      (registrationStatus === 'VERIFIED' || registrationStatus === 'COMPLETED')
+    ) {
+      const chatPath = registrationStatus === 'COMPLETED' ? returnPath : null;
+      return <Navigate to={chatPath ?? '/home'} replace />;
+    }
+  }
+
+  return <AuthFlow initialStep={initialStep} returnPath={returnPath} />;
+};
+
+const AuthFlow = ({
+  initialStep,
+  returnPath,
+}: {
+  initialStep: AuthStep;
+  returnPath: string | null;
+}) => {
+  const navigate = useNavigate();
   const [step, setStep] = useState<AuthStep>(initialStep);
   const [emailId, setEmailId] = useState('');
   const [code, setCode] = useState('');
@@ -59,6 +102,11 @@ export const AuthPage = () => {
     ).toString();
 
     sessionStorage.setItem('kakaoRedirectUri', redirectUri);
+    if (returnPath) {
+      sessionStorage.setItem(KAKAO_CHAT_RETURN_PATH_KEY, returnPath);
+    } else {
+      sessionStorage.removeItem(KAKAO_CHAT_RETURN_PATH_KEY);
+    }
     kakaoAuthorizeUrl.searchParams.set('redirect_uri', redirectUri);
 
     window.location.href = kakaoAuthorizeUrl.toString();
