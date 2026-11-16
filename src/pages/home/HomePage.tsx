@@ -1,12 +1,14 @@
+import {useRef} from 'react';
 import {useInfiniteQuery} from '@tanstack/react-query';
 
 import {HOME_QUERY_OPTIONS} from '@/pages/home/api/query';
 import {Swipe} from '@/pages/home/components/Swipe';
-import {PwaInstallPrompt} from '@/pages/home/features/pwa-install-prompt/PwaInstallPrompt';
+import {HomeEntryNotices} from '@/pages/home/features/HomeEntryNotices';
 import {EmptyState} from '@/shared/components/EmptyState';
 import {Header} from '@/shared/components/Header';
 
 export const HomePage = () => {
+  const mainRef = useRef<HTMLElement | null>(null);
   const discoveryQuery = useInfiniteQuery(HOME_QUERY_OPTIONS.DISCOVERY());
   const seenFeedIds = new Set<number>();
   const users = (discoveryQuery.data?.pages ?? [])
@@ -30,7 +32,10 @@ export const HomePage = () => {
   const hasUsers = users.length > 0;
 
   return (
-    <main className='flex h-dvh flex-col pb-[12rem]'>
+    <main
+      ref={mainRef}
+      tabIndex={-1}
+      className='flex h-dvh flex-col pb-[12rem] outline-none'>
       <Header
         className='shrink-0'
         title={
@@ -84,7 +89,7 @@ export const HomePage = () => {
           />
         </div>
       )}
-      <PwaInstallPrompt />
+      <HomeEntryNotices fallbackFocusRef={mainRef} />
     </main>
   );
 };

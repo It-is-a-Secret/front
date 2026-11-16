@@ -8,6 +8,8 @@ interface BottomSheetProps {
   contentClassName?: string;
   ariaLabel?: string;
   ariaLabelledBy?: string;
+  autoFocus?: boolean;
+  onOpenAutoFocus?: (event: Event) => void;
   onClose: () => void;
 }
 
@@ -18,6 +20,8 @@ export const BottomSheet = ({
   contentClassName = '',
   ariaLabel,
   ariaLabelledBy,
+  autoFocus = false,
+  onOpenAutoFocus,
   onClose,
 }: BottomSheetProps) => {
   const handleOpenChange = (nextOpen: boolean) => {
@@ -27,10 +31,14 @@ export const BottomSheet = ({
   };
 
   return (
-    <Drawer.Root open={open} onOpenChange={handleOpenChange}>
+    <Drawer.Root
+      open={open}
+      autoFocus={autoFocus}
+      onOpenChange={handleOpenChange}>
       <Drawer.Portal>
         <Drawer.Overlay className='bg-white-800/50 fixed inset-0 z-[70]' />
         <Drawer.Content
+          onOpenAutoFocus={onOpenAutoFocus}
           aria-describedby={undefined}
           aria-label={ariaLabel}
           aria-labelledby={ariaLabelledBy}

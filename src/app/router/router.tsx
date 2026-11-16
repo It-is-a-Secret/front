@@ -15,6 +15,18 @@ import {OnboardingPage} from '@/pages/onboarding/OnboardingPage';
 import {ProfilePage} from '@/pages/profile/ProfilePage';
 
 export const router = createBrowserRouter([
+  ...(import.meta.env.DEV
+    ? [
+        {
+          path: '/__preview/photo-feedback',
+          lazy: async () => {
+            const {PhotoFeedbackPreview} =
+              await import('@/pages/home/PhotoFeedbackPreview');
+            return {Component: PhotoFeedbackPreview};
+          },
+        },
+      ]
+    : []),
   {
     path: '/auth',
     element: (

@@ -1,5 +1,18 @@
 import type {components} from '@/shared/types/schema';
 
+export const areChatPhotosReady = (
+  images:
+    | readonly Pick<
+        components['schemas']['FeedImageItem'],
+        'processingStatus'
+      >[]
+    | undefined
+) =>
+  Boolean(
+    images?.length &&
+    images.every((image) => image.processingStatus === 'READY')
+  );
+
 export const getChatEntryPath = (
   feedId: number,
   chatRoom: components['schemas']['DiscoveryChatRoom'] | null | undefined
