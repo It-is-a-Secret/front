@@ -1,12 +1,16 @@
 import {isHTTPError} from 'ky';
-import {Navigate, Outlet} from 'react-router-dom';
+import {Navigate, Outlet, useLocation} from 'react-router-dom';
 
+import {getChatLoginPath} from '@/shared/auth/model/chat-return-path';
 import {useAuthSession} from '@/shared/auth/useAuthSession';
 import {Button} from '@/shared/components/Button';
 import {ChatRealtimeProvider} from '@/pages/chat/components/ChatRealtimeProvider';
+import {useSyncChatPush} from '@/shared/pwa/chat-push';
 
 export const PrivateRoute = () => {
+  const {pathname} = useLocation();
   const session = useAuthSession();
+  useSyncChatPush(session.memberId);
 
   if (session.isPending) {
     return (
@@ -23,7 +27,7 @@ export const PrivateRoute = () => {
       isHTTPError(session.error) &&
       [401, 403].includes(session.error.response.status)
     ) {
-      return <Navigate to='/auth' replace />;
+      return <Navigate to={getChatLoginPath(pathname)} replace />;
     }
 
     return (

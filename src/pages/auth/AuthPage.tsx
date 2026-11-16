@@ -15,6 +15,10 @@ import {EmailAuthStep} from '@/pages/auth/steps/EmailAuthStep';
 import {LoginAuthStep} from '@/pages/auth/steps/LoginAuthStep';
 import {ToastMessage} from '@/pages/my/components/ToastMessage';
 import {API_ENDPOINT} from '@/shared/api/end-point';
+import {
+  getChatReturnPath,
+  KAKAO_CHAT_RETURN_PATH_KEY,
+} from '@/shared/auth/model/chat-return-path';
 import {authSessionQueryOptions} from '@/shared/auth/session-query';
 import {Header} from '@/shared/components/Header';
 import {useToast} from '@/shared/hooks/useToast';
@@ -23,6 +27,7 @@ import {IcSvgLeft} from '@/shared/icons';
 export const AuthPage = () => {
   const [searchParams] = useSearchParams();
   const stepParam = searchParams.get('step');
+  const returnPath = getChatReturnPath(searchParams.get('returnTo'));
   const initialStep: AuthStep =
     stepParam === 'email' || stepParam === 'complete' ? stepParam : 'login';
   const session = useQuery({
@@ -47,14 +52,21 @@ export const AuthPage = () => {
       session.isSuccess &&
       (registrationStatus === 'VERIFIED' || registrationStatus === 'COMPLETED')
     ) {
-      return <Navigate to='/home' replace />;
+      const chatPath = registrationStatus === 'COMPLETED' ? returnPath : null;
+      return <Navigate to={chatPath ?? '/home'} replace />;
     }
   }
 
-  return <AuthFlow initialStep={initialStep} />;
+  return <AuthFlow initialStep={initialStep} returnPath={returnPath} />;
 };
 
-const AuthFlow = ({initialStep}: {initialStep: AuthStep}) => {
+const AuthFlow = ({
+  initialStep,
+  returnPath,
+}: {
+  initialStep: AuthStep;
+  returnPath: string | null;
+}) => {
   const navigate = useNavigate();
   const [step, setStep] = useState<AuthStep>(initialStep);
   const [emailId, setEmailId] = useState('');
@@ -90,6 +102,11 @@ const AuthFlow = ({initialStep}: {initialStep: AuthStep}) => {
     ).toString();
 
     sessionStorage.setItem('kakaoRedirectUri', redirectUri);
+    if (returnPath) {
+      sessionStorage.setItem(KAKAO_CHAT_RETURN_PATH_KEY, returnPath);
+    } else {
+      sessionStorage.removeItem(KAKAO_CHAT_RETURN_PATH_KEY);
+    }
     kakaoAuthorizeUrl.searchParams.set('redirect_uri', redirectUri);
 
     window.location.href = kakaoAuthorizeUrl.toString();
