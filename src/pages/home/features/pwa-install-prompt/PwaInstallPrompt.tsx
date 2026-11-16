@@ -1,5 +1,6 @@
 import {useCallback, useEffect, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
+import {useNavigate} from 'react-router-dom';
 
 import {PwaInstallBottomSheet} from '@/pages/home/components/PwaInstallBottomSheet';
 import {usePwaInstallPrompt} from '@/pages/home/hooks/usePwaInstallPrompt';
@@ -11,6 +12,7 @@ interface PwaInstallPromptProps {
 }
 
 const EligiblePwaInstallPrompt = ({onReady}: PwaInstallPromptProps) => {
+  const navigate = useNavigate();
   const {isOpen, platform, handleDismiss} = usePwaInstallPrompt();
 
   useEffect(() => {
@@ -21,6 +23,10 @@ const EligiblePwaInstallPrompt = ({onReady}: PwaInstallPromptProps) => {
     <PwaInstallBottomSheet
       open={isOpen}
       platform={platform}
+      onInstall={() => {
+        handleDismiss();
+        navigate('/install-guide', {state: {fromInstallPrompt: true, platform}});
+      }}
       onClose={handleDismiss}
       onOpenAutoFocus={onReady}
     />

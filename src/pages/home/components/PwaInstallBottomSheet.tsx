@@ -5,6 +5,7 @@ import {Button} from '@/shared/components/Button';
 interface PwaInstallBottomSheetProps {
   open: boolean;
   platform: PwaPlatform;
+  onInstall: () => void;
   onClose: () => void;
   onOpenAutoFocus?: (event: Event) => void;
 }
@@ -12,6 +13,7 @@ interface PwaInstallBottomSheetProps {
 export const PwaInstallBottomSheet = ({
   open,
   platform,
+  onInstall,
   onClose,
   onOpenAutoFocus,
 }: PwaInstallBottomSheetProps) => {
@@ -41,7 +43,7 @@ export const PwaInstallBottomSheet = ({
           편리하게 사용해 보세요
         </h2>
         <div className='mt-[2rem] w-full'>
-          <Button text='설치하기' />
+          <Button text='설치하기' onClick={onInstall} />
         </div>
         <button
           type='button'

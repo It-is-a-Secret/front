@@ -1,8 +1,8 @@
-import type {ButtonHTMLAttributes} from 'react';
+import type {ButtonHTMLAttributes, ReactNode} from 'react';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   text: string;
-  description?: string;
+  description?: ReactNode;
 }
 
 export const Button = ({text, description, ...props}: ButtonProps) => {

@@ -1,4 +1,5 @@
 import {useRef, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
 
 import {PhotoBlurNoticeModal} from '@/pages/home/components/PhotoBlurNoticeModal';
 import {PwaInstallBottomSheet} from '@/pages/home/components/PwaInstallBottomSheet';
@@ -7,6 +8,7 @@ import {Button} from '@/shared/components/Button';
 import {useToast} from '@/shared/hooks/useToast';
 
 export const PhotoFeedbackPreview = () => {
+  const navigate = useNavigate();
   const mainRef = useRef<HTMLElement | null>(null);
   const [isInstallOpen, setIsInstallOpen] = useState(true);
   const [isNoticeOpen, setIsNoticeOpen] = useState(false);
@@ -38,6 +40,11 @@ export const PhotoFeedbackPreview = () => {
       <PwaInstallBottomSheet
         open={isInstallOpen}
         platform='android'
+        onInstall={() =>
+          navigate('/install-guide', {
+            state: {fromInstallPrompt: true, platform: 'android'},
+          })
+        }
         onClose={() => setIsInstallOpen(false)}
         onOpenAutoFocus={() => setIsNoticeOpen(true)}
       />
