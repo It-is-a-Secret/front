@@ -9,14 +9,24 @@ import {ChatPage} from '@/pages/chat/ChatPage';
 import {ChatRoom} from '@/pages/chat/ChatRoom';
 import {NewChatRoom} from '@/pages/chat/NewChatRoom';
 import {HomePage} from '@/pages/home/HomePage';
+import {PwaInstallGuide} from '@/pages/home/features/pwa-install-prompt/PwaInstallGuide';
 import {MyPage} from '@/pages/my/MyPage';
 import {ProfileEditPage} from '@/pages/my/ProfileEditPage';
 import {OnboardingPage} from '@/pages/onboarding/OnboardingPage';
 import {ProfilePage} from '@/pages/profile/ProfilePage';
+import {TermsPage} from '@/pages/terms/TermsPage';
 
 export const router = createBrowserRouter([
   ...(import.meta.env.DEV
     ? [
+        ...(['android', 'ios'] as const).map((platform) => ({
+          path: `/__preview/install-guide/${platform}`,
+          element: (
+            <Layout>
+              <PwaInstallGuide previewPlatform={platform} />
+            </Layout>
+          ),
+        })),
         {
           path: '/__preview/photo-feedback',
           lazy: async () => {
@@ -40,6 +50,22 @@ export const router = createBrowserRouter([
     element: (
       <Layout>
         <AuthCallbackPage />
+      </Layout>
+    ),
+  },
+  {
+    path: '/terms',
+    element: (
+      <Layout>
+        <TermsPage />
+      </Layout>
+    ),
+  },
+  {
+    path: '/install-guide',
+    element: (
+      <Layout>
+        <PwaInstallGuide />
       </Layout>
     ),
   },
