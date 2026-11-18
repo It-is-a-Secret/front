@@ -25,6 +25,7 @@ export const useChatMessageScroll = ({
   const loadPreviousRef = useRef<HTMLDivElement>(null);
   const initializedRef = useRef(false);
   const nearBottomRef = useRef(true);
+  const containerHeightRef = useRef(0);
   const latestMessageIdRef = useRef<number | undefined>(undefined);
   const loadingRef = useRef(false);
   const scrollSnapshotRef = useRef<{height: number; top: number} | null>(null);
@@ -79,6 +80,23 @@ export const useChatMessageScroll = ({
     }
   }, [messages, onReachBottom, scrollToMessageId]);
 
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    containerHeightRef.current = container.clientHeight;
+
+    // 키보드나 전송 상태 문구로 목록 높이가 바뀌어도 최신 대화를 유지합니다.
+    const observer = new ResizeObserver(() => {
+      containerHeightRef.current = container.clientHeight;
+      if (nearBottomRef.current) {
+        container.scrollTop = container.scrollHeight;
+        onReachBottom?.();
+      }
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [onReachBottom]);
+
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === 'visible' && nearBottomRef.current)
@@ -111,7 +129,7 @@ export const useChatMessageScroll = ({
 
   const handleScroll = () => {
     const container = containerRef.current;
-    if (container) {
+    if (container && container.clientHeight === containerHeightRef.current) {
       nearBottomRef.current =
         container.scrollHeight - container.scrollTop - container.clientHeight <
         80;
