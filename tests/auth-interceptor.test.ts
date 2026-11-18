@@ -11,6 +11,8 @@ import {restoreSession} from '../src/shared/auth/model/restore-session';
 import {isAuthenticationError} from '../src/shared/auth/model/session-error';
 
 const originalLocalStorage = globalThis.localStorage;
+const originalRequest = globalThis.Request;
+const originalFetch = globalThis.fetch;
 
 beforeEach(() => {
   setAccessToken(null);
@@ -27,6 +29,8 @@ beforeEach(() => {
 afterEach(() => {
   setAccessToken(null);
   globalThis.localStorage = originalLocalStorage;
+  globalThis.Request = originalRequest;
+  globalThis.fetch = originalFetch;
 });
 
 const deferred = <T>() => {
@@ -250,5 +254,59 @@ test('a repeated 401 after refresh stops after one replay', async () => {
   assert.equal(
     client.requests.filter((request) => !isRefresh(request)).length,
     2
+  );
+});
+
+test('login, cold-start refresh, profile and logout all use the app origin', async () => {
+  const appOrigin = 'https://app.example';
+  const requests: Request[] = [];
+  // Node에서는 브라우저처럼 상대 URL을 현재 앱 출처로 해석하도록 보완합니다.
+  globalThis.Request = class extends originalRequest {
+    constructor(input: RequestInfo | URL, init?: RequestInit) {
+      super(
+        typeof input === 'string' ? new URL(input, appOrigin) : input,
+        init
+      );
+    }
+  };
+  globalThis.fetch = async (input, init) => {
+    const request = input instanceof Request ? input : new Request(input, init);
+    requests.push(request);
+    assert.equal(new URL(request.url).origin, appOrigin);
+    assert.equal(request.credentials, 'include');
+    const path = new URL(request.url).pathname;
+    if (path === '/api/auth/oauth/kakao/callback') {
+      return Response.json({data: {accessToken: 'login-token'}});
+    }
+    if (path === '/api/auth/token/refresh') return refreshed();
+    assert.equal(request.headers.get('Authorization'), 'Bearer new-token');
+    return path === '/api/auth/logout'
+      ? new Response(null, {status: 204})
+      : Response.json({data: {id: 42}});
+  };
+  const {api, publicApi} = await import('../src/shared/api/config/instance');
+  const {refreshAccessToken} =
+    await import('../src/shared/api/config/interceptor');
+  const {API_ENDPOINT} = await import('../src/shared/api/end-point');
+  const callback = await publicApi
+    .get(API_ENDPOINT.auth.kakaoCallback, {searchParams: {code: 'test-code'}})
+    .json<{data: {accessToken: string}}>();
+  assert.equal(callback.data.accessToken, 'login-token');
+
+  const session = await restoreSession({
+    getAccessToken,
+    refreshAccessToken,
+    getProfile: () => api.get(API_ENDPOINT.profile.me).json(),
+  });
+  assert.equal(session.memberId, 42);
+  await api.post(API_ENDPOINT.auth.logout);
+  assert.deepEqual(
+    requests.map((request) => new URL(request.url).pathname),
+    [
+      API_ENDPOINT.auth.kakaoCallback,
+      API_ENDPOINT.auth.refreshToken,
+      API_ENDPOINT.profile.me,
+      API_ENDPOINT.auth.logout,
+    ]
   );
 });

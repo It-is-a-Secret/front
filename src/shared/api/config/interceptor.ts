@@ -5,7 +5,6 @@ import {API_ENDPOINT} from '@/shared/api/end-point';
 import type {RefreshTokenResponse} from '@/shared/types/auth/type';
 
 const refreshApi = ky.create({
-  prefix: import.meta.env.VITE_BASE_URL,
   credentials: 'include',
   retry: 0,
 });

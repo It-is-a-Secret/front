@@ -104,7 +104,7 @@ const AuthFlow = ({
   const handleKakaoLogin = () => {
     const kakaoAuthorizeUrl = new URL(
       API_ENDPOINT.auth.kakaoAuthorize,
-      import.meta.env.VITE_BASE_URL
+      window.location.origin
     );
 
     const redirectUri = new URL(

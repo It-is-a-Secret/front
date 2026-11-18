@@ -1,5 +1,15 @@
 # React + TypeScript + Vite
 
+## API 및 로그인 쿠키
+
+HTTP API는 앱과 같은 출처의 `/api/*`로 요청합니다. 개발 서버에서는
+`vite.config.ts`의 프록시가 `VITE_BASE_URL`로 전달하고, 운영에서는
+`vercel.json`의 rewrite가 `https://blursome.p-e.kr`로 전달합니다.
+API 응답은 캐시하지 않습니다. WebSocket은 기존 백엔드 주소로 직접 연결합니다.
+
+기존 백엔드 도메인에 저장된 RT 쿠키는 앱 도메인으로 자동 이동하지 않습니다.
+이 변경을 배포한 뒤에는 앱에서 한 번 다시 로그인해야 새 출처에 쿠키가 저장됩니다.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
