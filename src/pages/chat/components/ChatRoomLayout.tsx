@@ -34,7 +34,7 @@ export const ChatRoomLayout = () => {
 
   return (
     <ChatRoomInputContext.Provider value={register}>
-      <section className='relative flex h-dvh flex-col'>
+      <section className='relative flex h-dvh flex-col overflow-hidden'>
         <div
           className='flex min-h-0 flex-1 flex-col'
           onClick={(event) => {
