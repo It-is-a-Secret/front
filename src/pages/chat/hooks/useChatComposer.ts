@@ -74,7 +74,7 @@ export const useChatComposer = ({
     setError(received.message);
   }, []);
 
-  const sendMessage = () => {
+  const sendMessage = useCallback(() => {
     const content = message.trim();
     if (!canSend || status !== 'connected' || !content || pendingRef.current)
       return;
@@ -102,7 +102,7 @@ export const useChatComposer = ({
       setIsSending(false);
       setError('연결을 확인한 뒤 다시 시도해 주세요.');
     }
-  };
+  }, [canSend, status, message, roomId, latestMessageId, publish, queryClient]);
 
   return {
     message,

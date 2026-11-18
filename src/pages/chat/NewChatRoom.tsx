@@ -1,11 +1,11 @@
-import {useRef, useState} from 'react';
+import {useCallback, useMemo, useRef, useState} from 'react';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {isHTTPError} from 'ky';
 import {Navigate, useNavigate, useParams} from 'react-router-dom';
 
-import {ChatInputBox} from '@/pages/chat/components/ChatInputBox';
 import {ChatImageList} from '@/pages/chat/components/ChatImageList';
 import {ChatRoomState} from '@/pages/chat/components/ChatRoomState';
+import {useChatRoomInput} from '@/pages/chat/hooks/useChatRoomInput';
 import {updateChatRoomPreview} from '@/pages/chat/utils/chat-room-preview';
 import {
   getChatEntryPath,
@@ -32,7 +32,8 @@ const NewChatRoomContent = ({feedId}: {feedId: number}) => {
   const detailQuery = useQuery(PROFILE_QUERY_OPTIONS.DETAIL(feedId));
   const imagesQuery = useQuery(PROFILE_QUERY_OPTIONS.IMAGES(feedId));
   const [message, setMessage] = useState('');
-  const submittingRef = useRef(false);
+  const messageRef = useRef('');
+  const submittingRef = useRef<{draft: string} | null>(null);
   const mutation = useMutation({
     ...HOME_MUTATION_OPTIONS.START_CHAT(),
     onSuccess: async (response, variables) => {
@@ -59,7 +60,8 @@ const NewChatRoomContent = ({feedId}: {feedId: number}) => {
         state: {
           draftMessage: getStartChatDraft(
             response.data.created,
-            variables.body.message
+            submittingRef.current?.draft ?? variables.body.message,
+            messageRef.current
           ),
         },
       });
@@ -72,7 +74,7 @@ const NewChatRoomContent = ({feedId}: {feedId: number}) => {
       }
     },
     onSettled: () => {
-      submittingRef.current = false;
+      submittingRef.current = null;
     },
   });
   const profile = detailQuery.data?.data;
@@ -81,6 +83,35 @@ const NewChatRoomContent = ({feedId}: {feedId: number}) => {
     : undefined;
   const cannotStart =
     errorStatus === 403 || errorStatus === 404 || errorStatus === 409;
+  const handleMessageChange = useCallback((value: string) => {
+    messageRef.current = value;
+    setMessage(value);
+  }, []);
+  const {mutate} = mutation;
+  const handleSubmit = useCallback(() => {
+    if (!profile || !message.trim() || cannotStart || submittingRef.current)
+      return;
+    submittingRef.current = {draft: message};
+    mutate({feedId, body: {message: message.trim()}});
+  }, [profile, message, cannotStart, mutate, feedId]);
+  const submitDisabled =
+    detailQuery.isPending ||
+    detailQuery.isError ||
+    mutation.isPending ||
+    cannotStart ||
+    !message.trim() ||
+    !profile;
+  useChatRoomInput(
+    useMemo(
+      () => ({
+        value: message,
+        onValueChange: handleMessageChange,
+        onSubmit: handleSubmit,
+        submitDisabled,
+      }),
+      [message, handleMessageChange, handleSubmit, submitDisabled]
+    )
+  );
 
   if (detailQuery.isError) {
     return (
@@ -120,7 +151,7 @@ const NewChatRoomContent = ({feedId}: {feedId: number}) => {
   );
 
   return (
-    <section className='relative flex h-dvh flex-col'>
+    <section className='relative flex min-h-0 flex-1 flex-col'>
       <Header
         className='px-[2rem]'
         leftItem={<IcSvgLeft className='size-[2.4rem] text-gray-800' />}
@@ -178,32 +209,6 @@ const NewChatRoomContent = ({feedId}: {feedId: number}) => {
             메시지를 보내고 있어요.
           </p>
         )}
-        <ChatInputBox
-          value={message}
-          onValueChange={setMessage}
-          inputProps={{
-            disabled: mutation.isPending || cannotStart,
-            onKeyDown: (event) => {
-              if (event.key === 'Enter' && event.nativeEvent.isComposing)
-                event.preventDefault();
-            },
-          }}
-          submitDisabled={
-            mutation.isPending || cannotStart || !message.trim() || !profile
-          }
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (
-              !profile ||
-              !message.trim() ||
-              cannotStart ||
-              submittingRef.current
-            )
-              return;
-            submittingRef.current = true;
-            mutation.mutate({feedId, body: {message: message.trim()}});
-          }}
-        />
       </main>
     </section>
   );

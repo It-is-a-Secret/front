@@ -15,10 +15,12 @@ import {EmailAuthStep} from '@/pages/auth/steps/EmailAuthStep';
 import {LoginAuthStep} from '@/pages/auth/steps/LoginAuthStep';
 import {ToastMessage} from '@/pages/my/components/ToastMessage';
 import {API_ENDPOINT} from '@/shared/api/end-point';
+import {SessionRestoreError} from '@/shared/auth/components/SessionRestoreError';
 import {
   getChatReturnPath,
   KAKAO_CHAT_RETURN_PATH_KEY,
 } from '@/shared/auth/model/chat-return-path';
+import {isAuthenticationError} from '@/shared/auth/model/session-error';
 import {authSessionQueryOptions} from '@/shared/auth/session-query';
 import {Header} from '@/shared/components/Header';
 import {useToast} from '@/shared/hooks/useToast';
@@ -44,6 +46,15 @@ export const AuthPage = () => {
           className='flex min-h-dvh items-center justify-center'>
           로그인 정보를 확인하고 있어요.
         </section>
+      );
+    }
+
+    if (session.isError && !isAuthenticationError(session.error)) {
+      return (
+        <SessionRestoreError
+          isFetching={session.isFetching}
+          onRetry={() => void session.refetch()}
+        />
       );
     }
 

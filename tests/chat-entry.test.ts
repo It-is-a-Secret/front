@@ -58,3 +58,16 @@ test('does not use malformed navigation state as chat input', () => {
     assert.equal(readChatDraft(state), '');
   }
 });
+
+test('preserves a draft edited while the first message is being sent', () => {
+  const sentMessage = '안녕하세요!';
+  const editedDraft = '안녕하세요! 반가워요';
+  assert.equal(getStartChatDraft(true, sentMessage, editedDraft), editedDraft);
+  assert.equal(getStartChatDraft(false, sentMessage, editedDraft), editedDraft);
+  assert.equal(getStartChatDraft(true, sentMessage, sentMessage), '');
+});
+
+test('does not restore a pending first message that the user cleared', () => {
+  assert.equal(getStartChatDraft(true, '안녕하세요!', ''), '');
+  assert.equal(getStartChatDraft(false, '안녕하세요!', ''), '');
+});
