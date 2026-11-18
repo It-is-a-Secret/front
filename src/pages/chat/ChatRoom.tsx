@@ -1,8 +1,7 @@
-import {useEffect} from 'react';
+import {useEffect, useMemo} from 'react';
 import {useLocation, useNavigate, useParams} from 'react-router-dom';
 import {readChatDraft} from '@/pages/chat/model/chat-entry';
 
-import {ChatInputBox} from '@/pages/chat/components/ChatInputBox';
 import {ChatReportSheet} from '@/pages/chat/components/ChatReportSheet';
 import {ChatRoomActionMenu} from '@/pages/chat/components/ChatRoomActionMenu';
 import {ChatMessageListSection} from '@/pages/chat/section/ChatMessageListSection';
@@ -10,6 +9,7 @@ import {ChatPhotoSection} from '@/pages/chat/section/ChatPhotoSection';
 import {useChatRoomQuery} from '@/pages/chat/hooks/useChatRoomQuery';
 import {useChatRoomActions} from '@/pages/chat/hooks/useChatRoomActions';
 import {useChatComposer} from '@/pages/chat/hooks/useChatComposer';
+import {useChatRoomInput} from '@/pages/chat/hooks/useChatRoomInput';
 import {useChatRoomRealtime} from '@/pages/chat/hooks/useChatRoomRealtime';
 import {ChatRoomState} from '@/pages/chat/components/ChatRoomState';
 import {ChatRoomConfirmSheet} from '@/pages/chat/components/ChatRoomConfirmSheet';
@@ -72,12 +72,41 @@ const ChatRoomContent = ({roomId}: {roomId: number}) => {
     messagesQuery,
   } = chat;
   const isInputDisabled = isActionPending || room?.roomStatus !== 'ACTIVE';
+  const disabled = !chat.isLoading && !chat.error && isInputDisabled;
+  const submitDisabled =
+    chat.isLoading ||
+    Boolean(chat.error) ||
+    isInputDisabled ||
+    !realtime.isConnected ||
+    composer.isSending ||
+    !composer.message.trim();
+  useChatRoomInput(
+    useMemo(
+      () => ({
+        value: composer.message,
+        onValueChange: composer.setMessage,
+        onSubmit: composer.sendMessage,
+        disabled,
+        submitDisabled,
+        placeholder: disabled
+          ? '메시지를 보낼 수 없어요'
+          : '메시지를 입력하세요',
+      }),
+      [
+        composer.message,
+        composer.setMessage,
+        composer.sendMessage,
+        disabled,
+        submitDisabled,
+      ]
+    )
+  );
 
   if (chat.isLoading || memberId === null) {
     return (
       <section
         role='status'
-        className='text-body1-15r flex min-h-dvh items-center justify-center text-gray-600'>
+        className='text-body1-15r flex min-h-0 flex-1 items-center justify-center text-gray-600'>
         대화를 불러오고 있어요.
       </section>
     );
@@ -98,7 +127,7 @@ const ChatRoomContent = ({roomId}: {roomId: number}) => {
   }
 
   return (
-    <section className='relative flex h-dvh flex-col'>
+    <section className='relative flex min-h-0 flex-1 flex-col'>
       <div ref={actionMenuRef}>
         <Header
           className='px-[2rem]'
@@ -174,32 +203,6 @@ const ChatRoomContent = ({roomId}: {roomId: number}) => {
               메시지를 보내고 있어요.
             </p>
           )}
-          <ChatInputBox
-            value={composer.message}
-            onValueChange={composer.setMessage}
-            inputProps={{
-              disabled: isInputDisabled,
-              onKeyDown: (event) => {
-                if (event.key === 'Enter' && event.nativeEvent.isComposing)
-                  event.preventDefault();
-              },
-            }}
-            submitDisabled={
-              isInputDisabled ||
-              !realtime.isConnected ||
-              composer.isSending ||
-              !composer.message.trim()
-            }
-            placeholder={
-              isInputDisabled
-                ? '메시지를 보낼 수 없어요'
-                : '메시지를 입력하세요'
-            }
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (!isInputDisabled) composer.sendMessage();
-            }}
-          />
         </div>
       </main>
 

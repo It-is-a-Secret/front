@@ -1,9 +1,9 @@
-import {isHTTPError} from 'ky';
 import {Navigate, Outlet, useLocation} from 'react-router-dom';
 
+import {SessionRestoreError} from '@/shared/auth/components/SessionRestoreError';
 import {getChatLoginPath} from '@/shared/auth/model/chat-return-path';
+import {isAuthenticationError} from '@/shared/auth/model/session-error';
 import {useAuthSession} from '@/shared/auth/useAuthSession';
-import {Button} from '@/shared/components/Button';
 import {ChatRealtimeProvider} from '@/pages/chat/components/ChatRealtimeProvider';
 import {useSyncChatPush} from '@/shared/pwa/chat-push';
 
@@ -23,26 +23,15 @@ export const PrivateRoute = () => {
   }
 
   if (session.isError) {
-    if (
-      isHTTPError(session.error) &&
-      [401, 403].includes(session.error.response.status)
-    ) {
+    if (isAuthenticationError(session.error)) {
       return <Navigate to={getChatLoginPath(pathname)} replace />;
     }
 
     return (
-      <section className='flex min-h-dvh flex-col items-center justify-center gap-[2.4rem] px-[2rem] text-center'>
-        <p role='alert' className='text-body1-15r text-gray-600'>
-          로그인 정보를 불러오지 못했어요.
-        </p>
-        <div className='w-full max-w-[28rem] [&>div]:h-[5.2rem]'>
-          <Button
-            text={session.isFetching ? '확인 중...' : '다시 시도'}
-            disabled={session.isFetching}
-            onClick={() => void session.refetch()}
-          />
-        </div>
-      </section>
+      <SessionRestoreError
+        isFetching={session.isFetching}
+        onRetry={() => void session.refetch()}
+      />
     );
   }
 

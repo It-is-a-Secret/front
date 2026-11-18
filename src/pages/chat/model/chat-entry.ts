@@ -27,8 +27,9 @@ export const getChatEntryPath = (
 
 export const getStartChatDraft = (
   created: boolean | undefined,
-  message: string
-) => (created === false ? message : '');
+  message: string,
+  currentDraft = message
+) => (created === false || currentDraft !== message ? currentDraft : '');
 
 export const readChatDraft = (state: unknown) =>
   typeof state === 'object' &&

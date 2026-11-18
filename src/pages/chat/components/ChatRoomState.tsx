@@ -17,7 +17,7 @@ export const ChatRoomState = ({
   const goToChatList = () => navigate('/chat', {replace: true});
 
   return (
-    <section className='flex min-h-dvh flex-col items-center justify-center gap-[2.4rem] px-[2rem] text-center'>
+    <section className='flex min-h-0 flex-1 flex-col items-center justify-center gap-[2.4rem] px-[2rem] text-center'>
       <p role='alert' className='text-body1-15r text-gray-600'>
         {title}
       </p>

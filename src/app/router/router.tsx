@@ -7,6 +7,7 @@ import {AuthCallbackPage} from '@/pages/auth/AuthCallbackPage';
 import {AuthPage} from '@/pages/auth/AuthPage';
 import {ChatPage} from '@/pages/chat/ChatPage';
 import {ChatRoom} from '@/pages/chat/ChatRoom';
+import {ChatRoomLayout} from '@/pages/chat/components/ChatRoomLayout';
 import {NewChatRoom} from '@/pages/chat/NewChatRoom';
 import {HomePage} from '@/pages/home/HomePage';
 import {PwaInstallGuide} from '@/pages/home/features/pwa-install-prompt/PwaInstallGuide';
@@ -118,13 +119,17 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: '/chat/new/:feedId',
-        element: <NewChatRoom />,
-      },
-      {
-        path: '/chat/:roomId',
-
-        element: <ChatRoom />,
+        element: <ChatRoomLayout />,
+        children: [
+          {
+            path: '/chat/new/:feedId',
+            element: <NewChatRoom />,
+          },
+          {
+            path: '/chat/:roomId',
+            element: <ChatRoom />,
+          },
+        ],
       },
     ],
   },
