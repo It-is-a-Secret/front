@@ -1,5 +1,5 @@
 import {useRef, useState} from 'react';
-import {useMutation, useQuery} from '@tanstack/react-query';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {Navigate, useNavigate, useSearchParams} from 'react-router-dom';
 
 import {AUTH_MUTATION_OPTIONS} from '@/pages/auth/api/query';
@@ -15,12 +15,14 @@ import {EmailAuthStep} from '@/pages/auth/steps/EmailAuthStep';
 import {LoginAuthStep} from '@/pages/auth/steps/LoginAuthStep';
 import {ToastMessage} from '@/pages/my/components/ToastMessage';
 import {API_ENDPOINT} from '@/shared/api/end-point';
+import {QUERY_KEYS} from '@/shared/api/config/query-key';
 import {SessionRestoreError} from '@/shared/auth/components/SessionRestoreError';
 import {
   getChatReturnPath,
   KAKAO_CHAT_RETURN_PATH_KEY,
 } from '@/shared/auth/model/chat-return-path';
 import {isAuthenticationError} from '@/shared/auth/model/session-error';
+import {getAuthPageDestination} from '@/shared/auth/model/registration-status';
 import {authSessionQueryOptions} from '@/shared/auth/session-query';
 import {Header} from '@/shared/components/Header';
 import {useToast} from '@/shared/hooks/useToast';
@@ -30,44 +32,44 @@ export const AuthPage = () => {
   const [searchParams] = useSearchParams();
   const stepParam = searchParams.get('step');
   const returnPath = getChatReturnPath(searchParams.get('returnTo'));
-  const initialStep: AuthStep =
-    stepParam === 'email' || stepParam === 'complete' ? stepParam : 'login';
   const session = useQuery({
     ...authSessionQueryOptions(),
-    enabled: initialStep === 'login',
     retryOnMount: false,
   });
 
-  if (initialStep === 'login') {
-    if (session.isPending) {
-      return (
-        <section
-          role='status'
-          className='flex min-h-dvh items-center justify-center'>
-          로그인 정보를 확인하고 있어요.
-        </section>
-      );
-    }
-
-    if (session.isError && !isAuthenticationError(session.error)) {
-      return (
-        <SessionRestoreError
-          isFetching={session.isFetching}
-          onRetry={() => void session.refetch()}
-        />
-      );
-    }
-
-    const registrationStatus = session.data?.profile.data?.registrationStatus;
-    if (
-      session.isSuccess &&
-      (registrationStatus === 'VERIFIED' || registrationStatus === 'COMPLETED')
-    ) {
-      const chatPath = registrationStatus === 'COMPLETED' ? returnPath : null;
-      return <Navigate to={chatPath ?? '/home'} replace />;
-    }
+  if (session.isPending) {
+    return (
+      <section
+        role='status'
+        className='flex min-h-dvh items-center justify-center'>
+        로그인 정보를 확인하고 있어요.
+      </section>
+    );
   }
 
+  if (session.isError) {
+    if (isAuthenticationError(session.error)) {
+      return <AuthFlow initialStep='login' returnPath={returnPath} />;
+    }
+
+    return (
+      <SessionRestoreError
+        isFetching={session.isFetching}
+        onRetry={() => void session.refetch()}
+      />
+    );
+  }
+
+  const destination = getAuthPageDestination(
+    session.data.profile.data?.registrationStatus,
+    stepParam,
+    returnPath
+  );
+  if (destination) {
+    return <Navigate to={destination} replace />;
+  }
+
+  const initialStep = stepParam === 'complete' ? 'complete' : 'email';
   return <AuthFlow initialStep={initialStep} returnPath={returnPath} />;
 };
 
@@ -79,6 +81,7 @@ const AuthFlow = ({
   returnPath: string | null;
 }) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState<AuthStep>(initialStep);
   const [emailId, setEmailId] = useState('');
   const [code, setCode] = useState('');
@@ -144,10 +147,28 @@ const AuthFlow = ({
   };
 
   const handleMoveComplete = () => {
+    queryClient.setQueryData(authSessionQueryOptions().queryKey, (session) =>
+      session
+        ? {
+            ...session,
+            profile: {
+              ...session.profile,
+              data: {
+                ...session.profile.data,
+                schoolEmail: email,
+                registrationStatus: 'VERIFIED' as const,
+              },
+            },
+          }
+        : session
+    );
+    void queryClient.invalidateQueries({queryKey: QUERY_KEYS.profile.me()});
     resendToast.hideToast();
     setVerificationAttempts(0);
     setStep('complete');
-    navigate('/auth?step=complete', {replace: true});
+    const search = new URLSearchParams({step: 'complete'});
+    if (returnPath) search.set('returnTo', returnPath);
+    navigate(`/auth?${search}`, {replace: true});
   };
 
   const handleVerifyEmailCode = () => {
@@ -173,7 +194,6 @@ const AuthFlow = ({
             sendEmailCodeMutation.reset();
             verifyEmailCodeMutation.reset();
             setStep('login');
-            navigate('/auth', {replace: true});
           }
         },
       }
