@@ -47,7 +47,7 @@ export const ChatMessageListSection = ({
     <section
       ref={containerRef}
       aria-label='대화 내역'
-      className='min-h-0 flex-1 overflow-y-auto px-[2rem] py-[2.4rem]'
+      className='min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-[2rem] py-[1.2rem]'
       onScroll={handleScroll}>
       <div ref={loadPreviousRef} className='h-px' aria-hidden='true' />
       {hasNextPage && (
