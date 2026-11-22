@@ -1,4 +1,4 @@
-import {useCallback, useState} from 'react';
+import {useCallback, useLayoutEffect, useRef, useState} from 'react';
 import {Outlet} from 'react-router-dom';
 
 import {ChatInputBox} from '@/pages/chat/components/ChatInputBox';
@@ -14,6 +14,7 @@ interface InputRegistration {
 }
 
 export const ChatRoomLayout = () => {
+  const layoutRef = useRef<HTMLElement>(null);
   const [registration, setRegistration] = useState<InputRegistration | null>(
     null
   );
@@ -32,9 +33,32 @@ export const ChatRoomLayout = () => {
   }, []);
   const config = registration?.config;
 
+  useLayoutEffect(() => {
+    const layout = layoutRef.current;
+    const viewport = window.visualViewport;
+    if (!layout || !viewport) return;
+
+    const syncViewport = () => {
+      // 확대했을 때는 브라우저의 기본 스크롤과 확대 동작을 유지합니다.
+      const useVisualViewport = viewport.scale === 1 && viewport.height > 0;
+      layout.style.height = useVisualViewport ? `${viewport.height}px` : '';
+      layout.style.top = useVisualViewport ? `${viewport.offsetTop}px` : '';
+    };
+    syncViewport();
+    viewport.addEventListener('resize', syncViewport);
+    viewport.addEventListener('scroll', syncViewport);
+    return () => {
+      viewport.removeEventListener('resize', syncViewport);
+      viewport.removeEventListener('scroll', syncViewport);
+    };
+  }, []);
+
   return (
     <ChatRoomInputContext.Provider value={register}>
-      <section className='relative flex h-dvh flex-col overflow-hidden'>
+      <section
+        ref={layoutRef}
+        data-chat-room-layout
+        className='fixed inset-x-0 top-0 mx-auto flex h-dvh max-w-[430px] flex-col overflow-hidden'>
         <div
           className='flex min-h-0 flex-1 flex-col'
           onClick={(event) => {

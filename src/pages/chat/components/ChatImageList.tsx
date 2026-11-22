@@ -11,6 +11,9 @@ interface ChatImageListProps {
   isRefreshing: boolean;
 }
 
+const getPhotoDescription = (photo: RevealedImage) =>
+  `${photo.revealed ? '공개된' : '흐림 처리된'} 프로필 사진 ${photo.displayOrder}`;
+
 const ChatPhotoThumbnail = ({photo}: {photo: RevealedImage}) => {
   const [failed, setFailed] = useState(false);
   return failed ? (
@@ -20,11 +23,7 @@ const ChatPhotoThumbnail = ({photo}: {photo: RevealedImage}) => {
   ) : (
     <img
       src={photo.imageUrl}
-      alt={
-        photo.revealed
-          ? `공개된 프로필 사진 ${photo.displayOrder}`
-          : `아직 공개되지 않은 프로필 사진 ${photo.displayOrder}`
-      }
+      alt={getPhotoDescription(photo)}
       className='size-full object-cover'
       onError={() => {
         setFailed(true);
@@ -54,7 +53,7 @@ const ChatPhotoViewer = ({
   return (
     <dialog
       ref={dialogRef}
-      aria-label={`프로필 사진 ${photo.displayOrder} 크게 보기`}
+      aria-label={`${getPhotoDescription(photo)} 크게 보기`}
       className='fixed inset-0 m-auto h-dvh max-h-none w-full max-w-[430px] bg-gray-800 p-0 backdrop:bg-black/60'
       onCancel={(event) => {
         event.preventDefault();
@@ -86,7 +85,7 @@ const ChatPhotoViewer = ({
         ) : (
           <img
             src={photo.imageUrl}
-            alt={`공개된 프로필 사진 ${photo.displayOrder}`}
+            alt={getPhotoDescription(photo)}
             className='max-h-full w-full object-contain'
             onError={() => {
               setFailed(true);
@@ -112,7 +111,7 @@ export const ChatImageList = ({
     (photo) => photo.revealed === true
   ).length;
   const selectedPhoto = photos.find(
-    (photo) => photo.displayOrder === selectedOrder && photo.revealed === true
+    (photo) => photo.displayOrder === selectedOrder
   );
 
   return (
@@ -127,15 +126,10 @@ export const ChatImageList = ({
               className={`aspect-square min-w-0 overflow-hidden rounded-[8px] ${photo.revealed ? 'shadow-[0_0_10px_2px_rgba(255,146,183,0.65)]' : ''}`}>
               <button
                 type='button'
-                disabled={!photo.revealed}
-                aria-haspopup={photo.revealed ? 'dialog' : undefined}
-                aria-label={
-                  photo.revealed
-                    ? `프로필 사진 ${photo.displayOrder} 크게 보기`
-                    : `프로필 사진 ${photo.displayOrder} 미공개`
-                }
+                aria-haspopup='dialog'
+                aria-label={`${getPhotoDescription(photo)} 크게 보기`}
                 onClick={() => setSelectedOrder(photo.displayOrder ?? null)}
-                className='size-full disabled:cursor-default'>
+                className='size-full'>
                 <ChatPhotoThumbnail
                   key={`${photo.imageUrl}-${refreshKey}`}
                   photo={photo}

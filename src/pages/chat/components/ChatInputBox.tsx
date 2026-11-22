@@ -29,13 +29,13 @@ export const ChatInputBox = ({
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <article className='mb-[2.6rem] px-[1.2rem] pt-[1.2rem]'>
+    <article className='shrink-0 px-[0.8rem] pt-[0.8rem] pb-[max(1.2rem,env(safe-area-inset-bottom))]'>
       <form {...formProps} className='flex h-[4.4rem]'>
         <button
           type='button'
           aria-label='첨부하기'
           disabled={inputProps?.disabled}
-          className='flex size-[4.4rem] items-center justify-center disabled:text-gray-400'>
+          className='flex size-[4.4rem] shrink-0 items-center justify-center disabled:text-gray-400'>
           <IcSvgPlus width={24} height={24} />
         </button>
 
@@ -47,7 +47,7 @@ export const ChatInputBox = ({
           placeholder={placeholder}
           value={value}
           onChange={(event) => onValueChange(event.target.value)}
-          className='text-input1-14r bg-primary-400 placeholder:text-white-800 disabled:placeholder:text-white-800 flex-1 rounded-[4px] px-[1.6rem] py-[0.8rem] text-gray-800 outline-none disabled:bg-gray-200 disabled:text-gray-400'
+          className='bg-primary-400 placeholder:text-white-800 disabled:placeholder:text-white-800 min-w-0 flex-1 rounded-[4px] px-[1.2rem] py-[0.8rem] text-[16px] leading-[1.4] text-gray-800 outline-none disabled:bg-gray-200 disabled:text-gray-400'
         />
 
         <button
@@ -64,7 +64,7 @@ export const ChatInputBox = ({
               event.preventDefault();
             }
           }}
-          className='flex size-[4.4rem] items-center justify-center disabled:text-gray-400'>
+          className='flex size-[4.4rem] shrink-0 items-center justify-center disabled:text-gray-400'>
           <IcSvgSend width={24} height={24} />
         </button>
       </form>
