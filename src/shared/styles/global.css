@@ -24,6 +24,10 @@ body {
   margin: 0 auto;
 }
 
+#root:has([data-chat-room-layout]) {
+  min-width: 0;
+}
+
 button {
   cursor: pointer;
 }

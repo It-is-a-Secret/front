@@ -1,4 +1,10 @@
-import {useCallback, useEffect, useLayoutEffect, useRef} from 'react';
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useRef,
+} from 'react';
 
 import type {ChatMessageResponse} from '@/pages/chat/api/type';
 
@@ -29,6 +35,13 @@ export const useChatMessageScroll = ({
   const latestMessageIdRef = useRef<number | undefined>(undefined);
   const loadingRef = useRef(false);
   const scrollSnapshotRef = useRef<{height: number; top: number} | null>(null);
+  const handleContainerResize = useEffectEvent((container: HTMLElement) => {
+    containerHeightRef.current = container.clientHeight;
+    if (nearBottomRef.current) {
+      container.scrollTop = container.scrollHeight;
+      onReachBottom?.();
+    }
+  });
 
   const handleLoadPreviousMessages = useCallback(async () => {
     const container = containerRef.current;
@@ -86,16 +99,10 @@ export const useChatMessageScroll = ({
     containerHeightRef.current = container.clientHeight;
 
     // 키보드나 전송 상태 문구로 목록 높이가 바뀌어도 최신 대화를 유지합니다.
-    const observer = new ResizeObserver(() => {
-      containerHeightRef.current = container.clientHeight;
-      if (nearBottomRef.current) {
-        container.scrollTop = container.scrollHeight;
-        onReachBottom?.();
-      }
-    });
+    const observer = new ResizeObserver(() => handleContainerResize(container));
     observer.observe(container);
     return () => observer.disconnect();
-  }, [onReachBottom]);
+  }, []);
 
   useEffect(() => {
     const handleVisibility = () => {
