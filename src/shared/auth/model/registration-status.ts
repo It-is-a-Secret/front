@@ -11,17 +11,15 @@ export const getAuthPageDestination = (
   requestedStep: string | null,
   returnPath: string | null
 ): string | null => {
-  if (!hasVerifiedSchoolEmail(status)) {
-    if (requestedStep === 'email') return null;
-
-    const search = new URLSearchParams({step: 'email'});
-    if (returnPath) search.set('returnTo', returnPath);
-    return `/auth?${search}`;
-  }
-
   if (status === 'COMPLETED') {
     return returnPath ?? '/home';
   }
 
-  return requestedStep === 'complete' ? null : '/home';
+  const step = status === 'VERIFIED' ? 'complete' : 'email';
+  if (requestedStep === step) return null;
+  if (status === 'VERIFIED' && requestedStep !== 'email') return '/home';
+
+  const search = new URLSearchParams({step});
+  if (returnPath) search.set('returnTo', returnPath);
+  return `/auth?${search}`;
 };
