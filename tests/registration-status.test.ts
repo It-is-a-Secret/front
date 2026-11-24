@@ -46,10 +46,19 @@ test('allows a verified member to view the verification completion step', () => 
   assert.equal(getAuthPageDestination('VERIFIED', 'complete', null), null);
 });
 
+test('shows the completion step when verification succeeds on the email route', () => {
+  assert.equal(
+    getAuthPageDestination('VERIFIED', 'email', null),
+    '/auth?step=complete'
+  );
+  assert.equal(
+    getAuthPageDestination('VERIFIED', 'email', '/chat/42'),
+    '/auth?step=complete&returnTo=%2Fchat%2F42'
+  );
+});
+
 test('preserves home browsing for verified members who postponed onboarding', () => {
-  for (const step of [null, 'email']) {
-    assert.equal(getAuthPageDestination('VERIFIED', step, '/chat/42'), '/home');
-  }
+  assert.equal(getAuthPageDestination('VERIFIED', null, '/chat/42'), '/home');
 });
 
 test('returns completed members to their chat or home from every auth step', () => {
