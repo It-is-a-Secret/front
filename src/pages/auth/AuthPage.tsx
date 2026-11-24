@@ -29,6 +29,7 @@ import {useToast} from '@/shared/hooks/useToast';
 import {IcSvgLeft} from '@/shared/icons';
 
 export const AuthPage = () => {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const stepParam = searchParams.get('step');
   const returnPath = getChatReturnPath(searchParams.get('returnTo'));
@@ -69,20 +70,27 @@ export const AuthPage = () => {
     return <Navigate to={destination} replace />;
   }
 
-  const initialStep = stepParam === 'complete' ? 'complete' : 'email';
-  return <AuthFlow initialStep={initialStep} returnPath={returnPath} />;
+  if (stepParam === 'complete') {
+    return (
+      <CompleteAuthStep
+        onNext={() => navigate('/onboarding')}
+        onLater={() => navigate('/home')}
+      />
+    );
+  }
+
+  return <AuthFlow initialStep='email' returnPath={returnPath} />;
 };
 
 const AuthFlow = ({
   initialStep,
   returnPath,
 }: {
-  initialStep: AuthStep;
+  initialStep: 'login' | 'email';
   returnPath: string | null;
 }) => {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [step, setStep] = useState<AuthStep>(initialStep);
+  const [step, setStep] = useState<Exclude<AuthStep, 'complete'>>(initialStep);
   const [emailId, setEmailId] = useState('');
   const [code, setCode] = useState('');
   const [verificationAttempts, setVerificationAttempts] = useState(0);
@@ -146,7 +154,7 @@ const AuthFlow = ({
     );
   };
 
-  const handleMoveComplete = () => {
+  const handleVerificationSuccess = () => {
     queryClient.setQueryData(authSessionQueryOptions().queryKey, (session) =>
       session
         ? {
@@ -163,12 +171,6 @@ const AuthFlow = ({
         : session
     );
     void queryClient.invalidateQueries({queryKey: QUERY_KEYS.profile.me()});
-    resendToast.hideToast();
-    setVerificationAttempts(0);
-    setStep('complete');
-    const search = new URLSearchParams({step: 'complete'});
-    if (returnPath) search.set('returnTo', returnPath);
-    navigate(`/auth?${search}`, {replace: true});
   };
 
   const handleVerifyEmailCode = () => {
@@ -182,7 +184,7 @@ const AuthFlow = ({
     verifyEmailCodeMutation.mutate(
       {schoolEmail: email, code},
       {
-        onSuccess: handleMoveComplete,
+        onSuccess: handleVerificationSuccess,
         onError: () => {
           const attempts = verificationAttempts + 1;
           setVerificationAttempts(attempts);
@@ -279,15 +281,6 @@ const AuthFlow = ({
 
   if (step === 'login') {
     return <LoginAuthStep onKakaoLogin={handleKakaoLogin} />;
-  }
-
-  if (step === 'complete') {
-    return (
-      <CompleteAuthStep
-        onNext={() => navigate('/onboarding')}
-        onLater={() => navigate('/home')}
-      />
-    );
   }
 
   return (
